@@ -1,0 +1,8 @@
+database:
+  url: postgres://automation:local@127.0.0.1:25432/automation?sslmode=disable
+
+messaging:
+  broker:
+    - 127.0.0.1:29094
+  topic: social.inbound
+  group_id: comment-automation

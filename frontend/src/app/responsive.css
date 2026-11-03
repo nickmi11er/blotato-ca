@@ -1,0 +1,649 @@
+@media (min-width: 1600px) {
+  main {
+    padding-top: 32px;
+  }
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr) 385px;
+    gap: 31px;
+  }
+  .section-body {
+    padding: 25px 27px;
+  }
+  .section-heading {
+    padding: 23px 27px;
+  }
+  .account-card {
+    padding: 17px;
+  }
+  .match-kind {
+    padding: 16px;
+  }
+  .social-cover {
+    height: 174px;
+  }
+  .social-cover strong {
+    font-size: 38px;
+  }
+}
+@media (max-width: 1250px) {
+  .sidebar {
+    width: 190px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .main-shell {
+    margin-left: 190px;
+  }
+  .brand {
+    gap: 7px;
+    margin-left: 8px;
+  }
+  .brand > span:first-of-type {
+    font-size: 15px;
+  }
+  .nav-item {
+    font-size: 11px;
+  }
+  main {
+    padding-left: 26px;
+    padding-right: 26px;
+  }
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 18px;
+  }
+  .section-heading,
+  .section-body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .account-card {
+    padding: 12px 10px;
+  }
+  .match-kind {
+    padding: 12px 9px;
+  }
+  .match-kind small {
+    font-size: 7px;
+  }
+  .match-kind strong {
+    font-size: 9px;
+  }
+  .matching-row {
+    gap: 9px;
+  }
+  .matching-row select {
+    font-size: 9px;
+  }
+  .next-step-card {
+    flex-wrap: wrap;
+    padding: 17px;
+    gap: 10px;
+  }
+  .next-step-card > .text-button {
+    margin-left: 42px;
+  }
+  .tester-body,
+  .conversation-tab {
+    padding: 13px;
+  }
+  .social-cover {
+    height: 145px;
+    padding-left: 15px;
+  }
+  .social-cover strong {
+    font-size: 30px;
+  }
+  .save-status {
+    display: none;
+  }
+  .toast {
+    left: calc(50% + 95px);
+  }
+}
+@media (max-width: 1050px) {
+  .sidebar {
+    width: 174px;
+  }
+  .main-shell {
+    margin-left: 174px;
+  }
+  .workspace-card {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+  .workspace-card strong {
+    font-size: 10px;
+  }
+  .workspace-card div > span {
+    font-size: 9px;
+  }
+  .workspace-icon {
+    width: 27px;
+    height: 27px;
+  }
+  main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr) 290px;
+    gap: 15px;
+  }
+  .account-grid {
+    gap: 6px;
+  }
+  .account-card {
+    padding: 10px 8px;
+  }
+  .account-copy strong {
+    font-size: 10px;
+  }
+  .account-copy small {
+    font-size: 8px;
+  }
+  .selection-check {
+    right: 7px;
+    top: 10px;
+    width: 12px;
+    height: 12px;
+  }
+  .match-kind-grid {
+    gap: 6px;
+  }
+  .match-kind strong {
+    font-size: 8px;
+    white-space: normal;
+  }
+  .match-kind small {
+    line-height: 1.5;
+  }
+  .match-kind strong > span {
+    font-size: 5px;
+    padding: 2px;
+  }
+  .matching-row {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+  .matching-row select {
+    font-size: 10px;
+  }
+  .section-heading {
+    gap: 9px;
+  }
+  h2 {
+    font-size: 12px;
+  }
+  .section-heading p {
+    font-size: 9px;
+  }
+  .section-icon {
+    display: none;
+  }
+  .editor-footer {
+    flex-direction: column;
+    gap: 7px;
+  }
+  .page-footer {
+    padding-left: 20px;
+    padding-right: 20px;
+    font-size: 8px;
+  }
+  .toast {
+    left: calc(50% + 87px);
+  }
+}
+@media (max-width: 870px) {
+  .sidebar {
+    width: 68px;
+    padding: 24px 10px 0;
+    align-items: center;
+  }
+  .brand {
+    margin: 0 0 30px;
+  }
+  .brand img {
+    width: 29px;
+    height: 29px;
+  }
+  .brand > span,
+  .workspace-card,
+  .nav-label,
+  .nav-count,
+  .connected-dot {
+    display: none;
+  }
+  .sidebar nav {
+    width: 100%;
+  }
+  .nav-item {
+    width: 44px;
+    height: 42px;
+    font-size: 0;
+    padding: 12px;
+    gap: 0;
+    justify-content: center;
+  }
+  .nav-item > .icon {
+    width: 19px;
+    height: 19px;
+  }
+  .nav-item.active::before {
+    left: -12px;
+  }
+  .main-shell {
+    margin-left: 68px;
+  }
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 17px;
+  }
+  .account-grid {
+    gap: 7px;
+  }
+  .account-card {
+    padding: 12px 8px;
+  }
+  .matching-row {
+    grid-template-columns: 1fr;
+  }
+  .toast {
+    left: calc(50% + 34px);
+  }
+}
+@media (max-width: 720px) {
+  main {
+    padding: 25px 21px 0;
+  }
+  .builder-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 23px;
+  }
+  .preview-column {
+    position: static;
+  }
+  .automation-name {
+    gap: 6px;
+  }
+  .draft-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  .automation-symbol {
+    display: none;
+  }
+  .button {
+    padding: 9px 11px;
+    font-size: 10px;
+  }
+  .toolbar-actions > .button > .icon {
+    display: none;
+  }
+  .section-heading {
+    padding: 20px;
+  }
+  .section-body {
+    padding: 20px;
+  }
+  h2 {
+    font-size: 14px;
+  }
+  .section-heading p {
+    font-size: 10px;
+  }
+  .account-card {
+    padding: 14px 11px;
+  }
+  .account-copy strong {
+    font-size: 11px;
+  }
+  .account-copy small {
+    font-size: 9px;
+  }
+  .match-kind strong {
+    font-size: 10px;
+  }
+  .match-kind small {
+    font-size: 8px;
+  }
+  .match-kind-grid {
+    gap: 9px;
+  }
+  .match-kind {
+    padding: 14px 11px;
+  }
+  .matching-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .preview-heading {
+    padding: 19px 21px;
+  }
+  .tester-body,
+  .conversation-tab {
+    padding: 20px;
+  }
+  .social-cover {
+    height: 195px;
+    padding: 22px;
+  }
+  .social-cover strong {
+    font-size: 43px;
+  }
+  .cover-label {
+    font-size: 8px;
+  }
+  .cover-note {
+    font-size: 8px;
+  }
+  .social-profile {
+    padding: 14px;
+  }
+  .social-profile strong {
+    font-size: 11px;
+  }
+  .social-profile small {
+    font-size: 9px;
+  }
+  .social-caption {
+    font-size: 11px;
+    padding: 15px 14px 0;
+  }
+  .social-caption strong {
+    font-size: 11px;
+  }
+  .comment-editor {
+    margin: 14px;
+    padding-top: 13px;
+  }
+  .comment-editor label {
+    font-size: 10px;
+  }
+  .comment-editor label > span {
+    font-size: 8px;
+  }
+  .comment-editor textarea {
+    font-size: 12px;
+    padding: 9px;
+  }
+  .quick-samples {
+    gap: 6px;
+  }
+  .quick-samples button {
+    font-size: 9px;
+  }
+  .test-source {
+    grid-template-columns: 115px minmax(0, 1fr);
+  }
+  .test-source > select {
+    font-size: 10px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+  .test-button {
+    padding: 12px;
+    font-size: 12px;
+  }
+  .match-result {
+    padding: 16px 13px;
+  }
+  .match-result strong {
+    font-size: 12px;
+  }
+  .match-result p {
+    font-size: 11px;
+  }
+  .test-context summary {
+    font-size: 10px;
+  }
+  .test-context label {
+    font-size: 11px;
+  }
+  .preview-footnote {
+    font-size: 10px;
+    padding: 15px;
+  }
+  .tip-card strong,
+  .tip-card p {
+    font-size: 11px;
+  }
+  .editor-footer {
+    flex-direction: row;
+    font-size: 8px;
+  }
+  .page-footer {
+    flex-direction: column;
+    gap: 7px;
+    padding: 28px 21px;
+    font-size: 9px;
+  }
+  .next-step-card {
+    flex-wrap: nowrap;
+  }
+  .next-step-card > .text-button {
+    margin-left: auto;
+  }
+}
+@media (max-width: 480px) {
+  .sidebar {
+    width: 54px;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+  .main-shell {
+    margin-left: 54px;
+  }
+  main {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .editor-toolbar {
+    align-items: flex-start;
+    padding: 15px 0;
+    gap: 8px;
+  }
+  .automation-name {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .automation-name h1 > button > .icon {
+    display: none;
+  }
+  .toolbar-actions > .button {
+    padding: 8px 10px;
+    font-size: 9px;
+  }
+  .section-heading {
+    padding: 17px 14px;
+    gap: 9px;
+    align-items: flex-start;
+  }
+  .section-number {
+    width: 25px;
+    height: 25px;
+    font-size: 9px;
+  }
+  h2 {
+    font-size: 12px;
+  }
+  .section-heading p {
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  .section-body {
+    padding: 17px 14px;
+  }
+  .field-heading > :first-child {
+    font-size: 10px;
+  }
+  .field-heading > span:last-child:not(:first-child) {
+    font-size: 8px;
+  }
+  .account-grid {
+    gap: 6px;
+  }
+  .account-card {
+    padding: 11px 8px;
+    gap: 10px;
+  }
+  .platform-badge {
+    width: 25px;
+    height: 25px;
+    border-radius: 6px;
+  }
+  .platform-badge > svg {
+    width: 15px;
+    height: 15px;
+  }
+  .account-copy strong {
+    font-size: 8px;
+  }
+  .account-copy small {
+    font-size: 7px;
+  }
+  .selection-check {
+    top: 7px;
+    right: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+  .selection-check .icon {
+    width: 7px;
+    height: 7px;
+  }
+  .match-kind-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  .coming-soon {
+    grid-column: 1/-1;
+    display: grid;
+    grid-template-columns: 23px 1fr;
+    gap: 3px 8px;
+    padding: 10px;
+  }
+  .coming-soon .match-kind-icon {
+    grid-row: 1/3;
+    margin-bottom: 0;
+    align-self: center;
+  }
+  .coming-soon small {
+    margin-top: 0;
+  }
+  .match-kind strong {
+    font-size: 9px;
+  }
+  .match-kind small {
+    font-size: 7px;
+  }
+  .match-kind strong > span {
+    font-size: 6px;
+  }
+  .matching-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .matching-row select {
+    font-size: 11px;
+  }
+  .next-step-card {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .next-step-card > .text-button {
+    margin-left: 42px;
+  }
+  .next-step-card h3 {
+    font-size: 12px;
+  }
+  .next-step-card p {
+    font-size: 8px;
+  }
+  .editor-footer {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tester-body,
+  .conversation-tab {
+    padding: 14px;
+  }
+  .preview-heading {
+    padding: 16px;
+  }
+  .preview-heading > span:first-child {
+    font-size: 11px;
+  }
+  .live-label {
+    font-size: 6px;
+  }
+  .social-cover {
+    height: 165px;
+    padding: 19px 14px;
+  }
+  .social-cover strong {
+    font-size: 34px;
+    margin-top: 20px;
+  }
+  .cover-label {
+    font-size: 6px;
+  }
+  .cover-note {
+    font-size: 6px;
+  }
+  .test-source {
+    grid-template-columns: 90px minmax(0, 1fr);
+  }
+  .test-source > select {
+    font-size: 8px;
+  }
+  .social-caption,
+  .social-caption strong {
+    font-size: 10px;
+  }
+  .comment-editor label {
+    font-size: 9px;
+    flex-wrap: wrap;
+    gap: 0 7px;
+  }
+  .comment-editor textarea {
+    font-size: 11px;
+  }
+  .quick-samples {
+    gap: 4px;
+  }
+  .quick-samples button {
+    font-size: 7px;
+  }
+  .preview-footnote {
+    font-size: 8px;
+  }
+  .match-result p {
+    font-size: 10px;
+  }
+  .modal {
+    padding: 27px 22px;
+  }
+  .modal h2 {
+    font-size: 25px;
+  }
+  .toast {
+    left: 50%;
+    bottom: 16px;
+    width: max-content;
+    font-size: 10px;
+  }
+  .page-footer {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

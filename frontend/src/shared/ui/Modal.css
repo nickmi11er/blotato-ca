@@ -1,0 +1,76 @@
+.modal {
+  width: min(540px, calc(100vw - 36px));
+  max-height: calc(100dvh - 60px);
+  padding: 34px;
+  border-radius: 17px;
+  border: 1px solid #bd7aca40;
+  background:
+    radial-gradient(ellipse at 90% 0, #9b3ce319, transparent 65%), #140d23;
+  color: #f7f0ff;
+  box-shadow: 0 30px 150px #0009;
+}
+.modal::backdrop {
+  background: #06030dbe;
+  backdrop-filter: blur(8px);
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 5px;
+  display: inline-flex;
+  color: #9d80ad;
+  border-radius: 5px;
+}
+.modal-close:hover {
+  background: #ffffff08;
+  color: #fbd4ef;
+}
+.modal-close .icon {
+  width: 16px;
+  height: 16px;
+}
+.dialog-eyebrow {
+  display: block;
+  font: 8px var(--mono);
+  letter-spacing: 0.12em;
+  color: #c583bb;
+  margin: 5px 25px 13px 0;
+}
+.modal h2 {
+  font-size: 28px;
+  line-height: 1.13;
+  letter-spacing: -0.04em;
+  font-weight: 550;
+  max-width: 360px;
+}
+.dialog-description {
+  font-size: 11px;
+  line-height: 1.8;
+  color: #a88bb7;
+  margin-top: 12px;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 25px;
+}
+.modal-form label {
+  display: block;
+  font-size: 11px;
+  color: #cbafd8;
+}
+.modal-form input,
+.modal-form textarea {
+  display: block;
+  margin-top: 8px;
+}
+.modal-form > .button {
+  margin-top: 5px;
+  align-self: flex-start;
+}
+.form-error {
+  font-size: 11px;
+  color: #edb39b;
+}

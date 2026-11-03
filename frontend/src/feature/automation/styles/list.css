@@ -1,0 +1,103 @@
+.automation-list {
+  min-height: calc(100vh - 80px);
+}
+.automation-list-heading {
+  margin: 7px 0 28px;
+}
+.automation-list-heading h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 26px;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+}
+.automation-list-heading h1 > span {
+  font: 12px var(--mono);
+  color: var(--muted);
+  background: #ffffff06;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 3px 8px;
+}
+.automation-list-heading p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 8px;
+}
+.automation-list-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  background: linear-gradient(120deg, #191128, #100b1e);
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+.automation-list-item:hover {
+  border-color: #b13bff60;
+  background: linear-gradient(120deg, #201532, #140d22);
+}
+.automation-list-item > .automation-symbol {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+}
+.automation-list-item > .automation-symbol .icon {
+  width: 20px;
+  height: 20px;
+}
+.automation-list-copy {
+  min-width: 0;
+  flex: 1;
+}
+.automation-list-copy h2 {
+  font-size: 15px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+.automation-list-copy p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.automation-list-copy p > span {
+  padding: 0 4px;
+  color: var(--dim);
+}
+.automation-list-status {
+  display: block;
+  margin-top: 12px;
+  color: var(--dim);
+  font-size: 10px;
+}
+.automation-list-accounts {
+  display: flex;
+  gap: 6px;
+}
+.automation-list-arrow {
+  color: var(--dim);
+}
+.automation-list-item:hover .automation-list-arrow {
+  color: #e7a5ed;
+}
+@media (max-width: 720px) {
+  .automation-list-item {
+    gap: 12px;
+    padding: 18px;
+    flex-wrap: wrap;
+  }
+  .automation-list-copy {
+    flex-basis: calc(100% - 64px);
+  }
+  .automation-list-accounts {
+    margin-left: 54px;
+    margin-right: auto;
+  }
+  .automation-list-heading h1 {
+    font-size: 23px;
+  }
+}
