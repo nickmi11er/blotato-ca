@@ -54,5 +54,25 @@ func KafkaTopic(t *testing.T, partitions int) (string, string) {
 			t.Error(err)
 		}
 	})
+	// CreateTopics acknowledges metadata creation before every partition is ready.
+	// Wait for usable logs so clients do not race leader initialization.
+	for partition := range partitions {
+		for {
+			log, err := kafkago.DialLeader(ctx, "tcp", broker, topic, partition)
+			if err == nil {
+				_ = log.SetDeadline(time.Now().Add(time.Second))
+				_, err = log.ReadLastOffset()
+				_ = log.Close()
+			}
+			if err == nil {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				t.Fatalf("test topic partition %d not ready: %v", partition, err)
+			case <-time.After(25 * time.Millisecond):
+			}
+		}
+	}
 	return broker, topic
 }

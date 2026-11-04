@@ -42,7 +42,11 @@ WITH candidate AS (SELECT id FROM execution_jobs WHERE status='ready' AND run_at
 UPDATE execution_jobs j SET status='leased',lease_until=clock_timestamp()+sqlc.arg(lease_ms)::bigint*interval '1 millisecond',lease_token=lease_token+1,attempt=attempt+1
 FROM candidate c WHERE j.id=c.id RETURNING j.*;
 -- name: RecoverJobs :execrows
-UPDATE execution_jobs SET status=CASE WHEN kind='deliver' AND NOT sqlc.arg(safe_delivery)::boolean THEN 'unknown' ELSE 'ready' END,lease_token=lease_token+1,lease_until=NULL WHERE status='leased' AND lease_until<=statement_timestamp();
+UPDATE execution_jobs
+SET status=CASE WHEN kind='deliver' AND NOT sqlc.arg(safe_delivery)::boolean THEN 'unknown' ELSE 'ready' END,
+    result=CASE WHEN kind='deliver' THEN result || '{"uncertain":true}'::jsonb ELSE result END,
+    lease_token=lease_token+1,lease_until=NULL
+WHERE status='leased' AND lease_until<=statement_timestamp();
 -- name: LockJob :one
 SELECT * FROM execution_jobs WHERE id=$1 FOR UPDATE;
 -- name: FinishJob :execrows

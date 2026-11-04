@@ -1,0 +1,39 @@
+flowchart TD
+    incoming["1 · Pricing comment / existing social integration"] -->|"Publish by conversation key"| kafka["Kafka · social.inbound"]
+    subgraph runtime["One Go service · stateless replicas"]
+        match["2 · Match account/post rules in bounded local caches"]
+        admit["3 · Deduplicate, enforce repeat policy, reserve conversation"]
+        send["4 · Reply publicly + ask for an email by DM"]
+        waitReply["5 · Persist reply wait; no worker held"]
+        route["Route incoming DM into durable inbox"]
+        validate["Validate the email reply"]
+        retry["Re-ask within attempt limit and original deadline"]
+        finalDm["6 · Send link by DM; complete on confirmed delivery"]
+        control["Control API"]
+    end
+    kafka -->|"Comment"| match
+    match -->|"No match"| ignored["Acknowledge; fresh cache needs no DB access"]
+    match -->|"Match"| admit
+    admit -->|"Commit session + jobs"| db[("PostgreSQL · versions, sessions, steps, inbox, jobs, history, rule outbox")]
+    db -->|"Workers claim durable jobs"| send
+    send -.->|"Activate capture before prompt"| kafka
+    send -->|"Confirmed actions"| waitReply
+    incomingDm["Later: DM with buyer@example.com"] -->|"Existing integration, same conversation key"| kafka
+    kafka -->|"DM"| route
+    route -->|"Persist once"| db
+    route -->|"Wake the waiting step"| validate
+    waitReply --> validate
+    validate -->|"Valid email"| finalDm
+    validate -->|"Invalid, attempts remain"| retry
+    retry --> waitReply
+    waitReply -->|"Timeout / limit"| stopped["Stop session"]
+    send -->|"Stable send key"| delivery["HTTP adapter → existing messaging service; local mode records"]
+    finalDm -->|"Stable send key"| delivery
+    editor["React editor + workspace proxy"] -->|"Save / publish"| control
+    control -->|"Immutable version + outbox"| db
+    control -.->|"Outbox relay"| rules["Kafka · automation.rules"]
+    rules -.->|"Invalidate every replica; TTL + reconciliation fallback"| match
+    classDef memory fill:#241a35,stroke:#a486ce,color:#f3edff
+    classDef durable fill:#142e2d,stroke:#75cbb7,color:#e2fff7
+    class match,waitReply,route memory
+    class db durable

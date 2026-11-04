@@ -1,3 +1,4 @@
+import { useAutomationSelection } from "./useAutomationSelection";
 import { useEffect, useRef, useState } from "react";
 import type { EmailTemplate } from "../../email-templates/model/templates";
 import { automationAPI, type AutomationRecord } from "../api/automations";
@@ -36,7 +37,7 @@ export function useAutomations(
   const [entries, setEntries] = useState<EditingAutomation[]>(() =>
     initial.map((e) => ({ ...e, savedDraft: e.draft })),
   );
-  const [activeId, setActiveId] = useState(initial[0]?.id ?? "");
+  const [activeId, setActiveId] = useAutomationSelection(initial[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
   const active = entries.find((e) => e.id === activeId);

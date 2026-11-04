@@ -390,6 +390,16 @@ func (e *Engine) CheckSend(ctx context.Context, job db.ExecutionJob) error {
 	return nil
 }
 func (e *Engine) Complete(ctx context.Context, job db.ExecutionJob, result delivery.Result) error {
+	if job.Kind == "deliver" && result.Status != "succeeded" {
+		var previous delivery.Result
+		if err := json.Unmarshal(job.Result, &previous); err != nil {
+			return err
+		}
+		// A later rejection (including rate limiting) says nothing about an
+		// earlier attempt whose receipt was lost. Only confirmation or explicit
+		// reconciliation clears that uncertainty; Resolve bypasses this merge.
+		result.Uncertain = result.Uncertain || previous.Uncertain
+	}
 	return e.store.transaction(ctx, job.SessionID, func(f *frame) error { return e.complete(ctx, f, job, result) })
 }
 func (e *Engine) complete(ctx context.Context, f *frame, job db.ExecutionJob, result delivery.Result) error {
@@ -427,6 +437,11 @@ func (e *Engine) complete(ctx context.Context, f *frame, job db.ExecutionJob, re
 	}
 	if result.Status == "failed" || result.Status == "retry" {
 		status = "failed"
+	}
+	// Exhausting safe retries does not prove the external effect did not happen.
+	// Preserve ambiguous outcomes for reconciliation instead of ending the run.
+	if (result.Status == "retry" || result.Status == "failed") && result.Uncertain {
+		status = "unknown"
 	}
 	rows, err := f.q.FinishJob(ctx, db.FinishJobParams{ID: job.ID, LeaseToken: job.LeaseToken, Status: status, Result: raw})
 	if err != nil {

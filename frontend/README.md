@@ -26,7 +26,7 @@ Vite proxies `/api` to the backend. Docker uses Nginx for the same boundary. Bot
 
 ## Editing and publishing
 
-- Create, save, list, and delete automations through the API. Incomplete drafts can be saved; publication validates trigger rules, account capabilities, the workflow, and its dependencies.
+- Create, save, list, and delete automations through the API. The selected automation is identified by the URL query parameter, so reloads and returning from templates preserve the editor; unavailable IDs return to the list. Incomplete drafts can be saved; publication validates trigger rules, account capabilities, the workflow, and its dependencies.
 - Saving a published flow changes only its draft. **Publish changes** creates an immutable version for new sessions. **Pause** disables new admission; existing sessions continue. Deleting an automation also preserves existing sessions and published history.
 - Draft saves, publication, and deletion send `If-Match` with the draft version. A stale editor receives a conflict instead of overwriting another tab's edits. Network errors keep the editor and its unsaved changes intact; edits typed during an in-flight save remain dirty.
 - Templates have independent revisions. Publication resolves referenced templates in the same workspace transaction and pins their contents in the execution plan. Editing a template never changes existing publications or sessions. Templates referenced by saved drafts cannot be deleted.

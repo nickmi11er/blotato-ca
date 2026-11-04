@@ -108,11 +108,11 @@ Stop the Go process with Ctrl+C, or use `docker compose stop backend`. Compose a
 From `backend`, run the integration tests with local dependencies:
 
 ```sh
-TEST_DATABASE_URL='postgres://automation:local@127.0.0.1:25432/automation?sslmode=disable' TEST_KAFKA_BROKER='127.0.0.1:29094' go test -race -count=1 ./...
+make integration-up test-integration
 go vet ./...
 ```
 
-Each PostgreSQL test creates and removes its own schema; the Kafka execution test creates an isolated topic/group and checks rebalance with two consumers. Without these environment variables, external integration tests are skipped. Go and React run the same Unicode matching cases from `frontend/src/feature/automation/model/testdata/matching.json`; run `npm run check` in `frontend` as well.
+See [integration tests](integration-tests.md) for cases and isolation. The Make target supplies local dependency addresses; plain `go test` skips external tests when their environment variables are absent. Go and React run the same Unicode matching cases from `frontend/src/feature/automation/model/testdata/matching.json`; run `npm run check` in `frontend` as well.
 
 ## Generate database code
 

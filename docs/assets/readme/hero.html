@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <title>Comment Automations · Product preview</title>
+  <style>
+    @font-face {
+      font-family: Geist;
+      src: url("../../../frontend/assets/fonts/geist.woff2");
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      width: 1600px;
+      background: #0c0817;
+      font-family: Geist, Arial, sans-serif;
+      color: #f8f3ff;
+    }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 65px 72px 40px;
+      background:
+        radial-gradient(ellipse at 80% 1%, #57204b70, transparent 42%),
+        radial-gradient(ellipse at 4% 80%, #453b7966, transparent 46%), #0c0817;
+    }
+    .grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(#b69acf28 0.8px, transparent 0.8px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(black, transparent 45%);
+      pointer-events: none;
+    }
+    header {
+      position: relative;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 40px;
+    }
+    .eyebrow {
+      color: #cda9e2;
+      font-size: 15px;
+      letter-spacing: 3.4px;
+      font-weight: 550;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .dot {
+      height: 8px;
+      width: 8px;
+      border-radius: 50%;
+      background: #ff5cb4;
+      box-shadow: 0 0 20px #ff5cb499;
+    }
+    h1 {
+      font-size: 62px;
+      line-height: 1.07;
+      letter-spacing: -3px;
+      font-weight: 570;
+      margin: 18px 0 0;
+    }
+    h1 span {
+      color: #c7aadf;
+    }
+    .side {
+      font-size: 18px;
+      line-height: 1.6;
+      color: #b9accb;
+      max-width: 300px;
+      padding-bottom: 5px;
+    }
+    .window {
+      position: relative;
+      max-width: 1040px;
+      margin: 0 auto;
+      border: 1px solid #78558a88;
+      border-radius: 17px;
+      overflow: hidden;
+      box-shadow:
+        0 24px 100px #0007,
+        0 0 0 7px #ffffff03;
+      background: #100b1c;
+    }
+    .window img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 31px;
+      color: #bba8cf;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+    }
+    .steps {
+      display: flex;
+      gap: 18px;
+      align-items: center;
+    }
+    .steps b {
+      font-weight: 500;
+      color: #efe5f8;
+    }
+    .steps span {
+      color: #765e8b;
+    }
+    .caption {
+      color: #8b7c9f;
+      font-size: 12px;
+    }
+  </style>
+  <section class="hero">
+    <div class="grid"></div>
+    <header>
+      <div>
+        <div class="eyebrow"><span class="dot"></span>COMMENT AUTOMATIONS</div>
+        <h1>One comment.<br /><span>A complete conversation.</span></h1>
+      </div>
+      <div class="side">
+        Build the flow visually.<br />Reply, wait, and follow up<br />on your
+        own terms.
+      </div>
+    </header>
+    <div class="window">
+      <img
+        src="interface.png"
+        alt="The workflow canvas with a pricing trigger, parallel public reply and DM, email capture and email delivery."
+      />
+    </div>
+    <footer>
+      <div class="steps">
+        <b>Match a comment</b><span>→</span><b>Start a conversation</b
+        ><span>→</span><b>Follow through</b>
+      </div>
+      <div class="caption">
+        Actual application interface · seeded pricing flow
+      </div>
+    </footer>
+  </section>
+</html>

@@ -549,7 +549,11 @@ func (q *Queries) RecordedDelivery(ctx context.Context, idempotencyKey string) (
 }
 
 const recoverJobs = `-- name: RecoverJobs :execrows
-UPDATE execution_jobs SET status=CASE WHEN kind='deliver' AND NOT $1::boolean THEN 'unknown' ELSE 'ready' END,lease_token=lease_token+1,lease_until=NULL WHERE status='leased' AND lease_until<=statement_timestamp()
+UPDATE execution_jobs
+SET status=CASE WHEN kind='deliver' AND NOT $1::boolean THEN 'unknown' ELSE 'ready' END,
+    result=CASE WHEN kind='deliver' THEN result || '{"uncertain":true}'::jsonb ELSE result END,
+    lease_token=lease_token+1,lease_until=NULL
+WHERE status='leased' AND lease_until<=statement_timestamp()
 `
 
 func (q *Queries) RecoverJobs(ctx context.Context, safeDelivery bool) (int64, error) {

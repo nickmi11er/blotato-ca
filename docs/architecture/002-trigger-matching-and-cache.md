@@ -54,7 +54,7 @@ These are the actual B-tree access paths in the [migration](../../backend/intern
 | Binding for each selected-post result | `trigger_bindings` PK `(tenant_id, account_id, automation_id)` | Join each post membership to its published revision |
 | Immutable rule document | `automation_versions` PK `(tenant_id, automation_id, revision)` | Fetch the exact revision selected by the binding |
 
-The [sqlc queries](../../backend/internal/db/queries/automation.sql) use these access paths to fill caches. There is no SQL text search or JSON index on the per-comment path. An internal bearer-authenticated API registers accounts and manages drafts/publications; its credential belongs to a trusted integration. Workflow JSON is stored for the future executor. See the [API example](../local-development.md#publish-a-trigger).
+The [sqlc queries](../../backend/internal/db/queries/automation.sql) use these access paths to fill caches. There is no SQL text search or JSON index on the per-comment path. An internal bearer-authenticated API registers accounts and manages drafts/publications; its credential belongs to a trusted integration. Published workflow JSON is compiled into an immutable plan for the [session executor](003-session-execution-and-dm-routing.md). See the [API example](../local-development.md#publish-a-trigger).
 
 ## Matching a comment
 

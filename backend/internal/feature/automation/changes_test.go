@@ -3,8 +3,8 @@ package automation_test
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,23 +14,27 @@ import (
 	"blotato-comment-automation/shared/kafka"
 )
 
+type observedInvalidation struct {
+	cache      *matching.Cache
+	generation atomic.Int64
+}
+
+func (o *observedInvalidation) Invalidate(account string, generation int64) {
+	o.cache.Invalidate(account, generation)
+	o.generation.Store(generation)
+}
+
 func TestRuleChangesReachBothReplicas(t *testing.T) {
-	broker := os.Getenv("TEST_KAFKA_BROKER")
-	if broker == "" {
-		t.Skip("set TEST_KAFKA_BROKER and create automation.rules topic")
-	}
+	broker, topic := testutil.KafkaTopic(t, 1)
 	pool := testutil.Database(t)
 	service := automation.NewService(pool)
-	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 40*time.Second)
 	defer cancel()
 	account := fmt.Sprintf("fanout-%d", time.Now().UnixNano())
-	if err := service.RegisterAccount(ctx, "tenant", account, "instagram"); err != nil {
-		t.Fatal(err)
-	}
 	type replica struct {
-		cache   *matching.Cache
-		changes *automation.Changes
-		bus     *kafka.Broadcast
+		cache    *matching.Cache
+		bus      *kafka.Broadcast
+		observer *observedInvalidation
 	}
 	replicas := make([]replica, 2)
 	var wg sync.WaitGroup
@@ -47,32 +51,65 @@ func TestRuleChangesReachBothReplicas(t *testing.T) {
 		}
 	}()
 	for i := range replicas {
-		cache, err := matching.NewCache(ctx, matching.NewRepository(pool), matching.DefaultConfig())
+		config := matching.DefaultConfig()
+		config.FreshTTL = 10 * time.Minute
+		config.NegativeTTL = 10 * time.Minute
+		cache, err := matching.NewCache(ctx, matching.NewRepository(pool), config)
 		if err != nil {
 			t.Fatal(err)
 		}
 		replicas[i].cache = cache
-		bus, err := kafka.NewBroadcast(ctx, []string{broker}, "automation.rules")
+		bus, err := kafka.NewBroadcast(ctx, []string{broker}, topic)
 		if err != nil {
 			t.Fatal(err)
 		}
 		replicas[i].bus = bus
-		changes := automation.NewChanges(pool, bus, cache)
-		replicas[i].changes = changes
+		observer := &observedInvalidation{cache: cache}
+		replicas[i].observer = observer
+		changes := automation.NewChanges(pool, bus, observer)
 		wg.Go(func() {
 			if err := changes.Consume(ctx); err != nil && ctx.Err() == nil {
 				t.Error(err)
 			}
 		})
-		results, err := cache.Match(ctx, "instagram", account, "post", "pricing")
+		wg.Go(func() {
+			if err := changes.Run(ctx); err != nil && ctx.Err() == nil {
+				t.Error(err)
+			}
+		})
+	}
+	if err := service.RegisterAccount(ctx, "tenant", account, "instagram"); err != nil {
+		t.Fatal(err)
+	}
+	// Wait for actual consumption, not merely outbox publication.
+	awaitGeneration := func() {
+		t.Helper()
+		var generation int64
+		if err := pool.QueryRow(ctx, "SELECT generation FROM account_rule_sets WHERE account_id=$1", account).Scan(&generation); err != nil {
+			t.Fatal(err)
+		}
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			ready := true
+			for _, r := range replicas {
+				ready = ready && r.observer.generation.Load() >= generation
+			}
+			if ready {
+				return
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("rule generation not consumed by both replicas")
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	awaitGeneration()
+	// Rewarm only after registration has invalidated both replicas.
+	for _, r := range replicas {
+		results, err := r.cache.Match(ctx, "instagram", account, "post", "pricing")
 		if err != nil || len(results) != 0 {
 			t.Fatal("initial negative cache", err)
 		}
-	}
-	// Consume the registration notification before testing publication; otherwise
-	// that earlier invalidation could mask a broken publication event.
-	if err := replicas[0].changes.Flush(ctx); err != nil {
-		t.Fatal(err)
 	}
 	if err := service.Save(ctx, "tenant", "pricing", document(account)); err != nil {
 		t.Fatal(err)
@@ -80,9 +117,7 @@ func TestRuleChangesReachBothReplicas(t *testing.T) {
 	if err := service.Publish(ctx, "tenant", "pricing"); err != nil {
 		t.Fatal(err)
 	}
-	if err := replicas[0].changes.Flush(ctx); err != nil {
-		t.Fatal(err)
-	}
+	awaitGeneration()
 	await := func(want int) {
 		t.Helper()
 		deadline := time.Now().Add(4 * time.Second)
@@ -108,12 +143,20 @@ func TestRuleChangesReachBothReplicas(t *testing.T) {
 	if err := service.Delete(ctx, "tenant", "pricing"); err != nil {
 		t.Fatal(err)
 	}
-	if err := replicas[1].changes.Flush(ctx); err != nil {
-		t.Fatal(err)
-	}
+	awaitGeneration()
 	await(0)
-	var pending int
-	if err := pool.QueryRow(ctx, "SELECT count(*) FROM rule_changes").Scan(&pending); err != nil || pending != 0 {
-		t.Fatal("outbox not drained", err, pending)
+	deadline := time.Now().Add(4 * time.Second)
+	for {
+		var pending int
+		if err := pool.QueryRow(ctx, "SELECT count(*) FROM rule_changes").Scan(&pending); err != nil {
+			t.Fatal(err)
+		}
+		if pending == 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("outbox not drained")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }

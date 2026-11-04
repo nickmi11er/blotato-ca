@@ -30,6 +30,7 @@ type Request struct {
 }
 type Result struct {
 	Status            string        `json:"status"`
+	Uncertain         bool          `json:"uncertain,omitempty"`
 	ProviderMessageID string        `json:"provider_message_id,omitempty"`
 	Reason            string        `json:"reason,omitempty"`
 	RetryAfter        time.Duration `json:"retry_after,omitempty"`
@@ -111,7 +112,7 @@ func (h *HTTP) Send(ctx context.Context, request Request) Result {
 		if h.Idempotent() {
 			status = "retry"
 		}
-		return Result{Status: status, Reason: reason}
+		return Result{Status: status, Uncertain: true, Reason: reason}
 	}
 	if err != nil {
 		return uncertain("integration response unavailable")
@@ -130,9 +131,11 @@ func (h *HTTP) Send(ctx context.Context, request Request) Result {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return Result{Status: "failed", Reason: "integration rejected request"}
 	}
+	// A receipt is one complete, bounded JSON document. Decoding only its prefix
+	// can turn truncated, concatenated or oversized responses into false success.
+	body, err := io.ReadAll(io.LimitReader(response.Body, 65537))
 	var result Result
-	decoder := json.NewDecoder(io.LimitReader(response.Body, 65536))
-	if decoder.Decode(&result) != nil {
+	if err != nil || len(body) > 65536 || json.Unmarshal(body, &result) != nil {
 		return uncertain("invalid integration response")
 	}
 	// Contract: succeeded means the integration confirmed the actual send. HTTP 202
@@ -147,6 +150,7 @@ func (h *HTTP) Send(ctx context.Context, request Request) Result {
 		}
 	case "retry", "failed": // These explicitly guarantee that no external send occurred.
 	case "unknown":
+		result.Uncertain = true
 		if h.Idempotent() {
 			result.Status = "retry"
 		}

@@ -44,7 +44,7 @@ beforeEach(() => {
   templates = defaultTemplates.map((t) => ({ ...t, revision: 1 }));
   calls = [];
   intercept = undefined;
-  window.history.replaceState(null, "", "#builder");
+  window.history.replaceState(null, "", "/#builder");
   vi.spyOn(globalThis, "fetch").mockImplementation(
     async (input, options = {}) => {
       const path = String(input).replace("/api/", "");
@@ -385,4 +385,33 @@ test("legacy pinned templates remain available without a library entry", async (
   expect(
     screen.getByRole<HTMLButtonElement>("button", { name: "Publish" }).disabled,
   ).toBe(false);
+});
+
+test("reloading a selected automation and returning from templates retains its identity", async () => {
+  records = [record("first", "First flow"), record("second", "Second flow")];
+  window.history.replaceState(null, "", "/#automations");
+  const user = userEvent.setup();
+  const view = render(<App />);
+  await user.click(
+    await screen.findByRole("link", { name: "Edit Second flow" }),
+  );
+  await screen.findByRole("button", { name: "Second flow" });
+  expect(new URLSearchParams(window.location.search).get("automation")).toBe(
+    "second",
+  );
+  view.unmount();
+  render(<App />);
+  await screen.findByRole("button", { name: "Second flow" });
+  await user.click(screen.getByRole("link", { name: "Email templates" }));
+  await user.click(
+    await screen.findByRole("link", { name: "Back to your flow" }),
+  );
+  await screen.findByRole("button", { name: "Second flow" });
+});
+
+test("an unavailable automation link does not open a different editor", async () => {
+  window.history.replaceState(null, "", "/?automation=deleted#builder");
+  render(<App />);
+  await screen.findByRole("button", { name: "New automation" });
+  expect(screen.queryByRole("button", { name: "Save draft" })).toBeNull();
 });

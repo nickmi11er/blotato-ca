@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1460" viewBox="0 0 1200 1460" role="img" aria-labelledby="title desc">
+<title id="title">From a pricing comment to a link in DM</title>
+<desc id="desc">Read steps one to six from top to bottom. Comments enter Kafka and are matched against cached rules. Non-matches exit. PostgreSQL atomically admits a session and jobs. Workers reply and ask for an email after activating reply capture. The session waits durably. A new DM enters the same Kafka partition and a durable inbox. A valid email resumes the session and sends the link by DM. Side panels show persistence, inbound replies and the existing messaging integration. A separate authoring path publishes rules and broadcasts cache invalidations.</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#171025"/><stop offset="1" stop-color="#090c17"/></linearGradient>
+<pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#bba6da" opacity=".12"/></pattern>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#ba99eb"/></marker>
+<marker id="mint" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="#80d5bd"/></marker>
+<style>text{font-family:Arial,Helvetica,sans-serif}.title{font-size:25px;font-weight:600;fill:#f7f0ff}.body{font-size:21px;fill:#c3b6d5}.small{font-size:18px;fill:#b8a9ca}.eyebrow{font-size:15px;font-weight:600;letter-spacing:1.8px;fill:#c3a6e9}.edge{fill:none;stroke:#ba99eb;stroke-width:2.5;marker-end:url(#arrow)}</style>
+</defs>
+<rect width="1200" height="1460" rx="24" fill="url(#bg)"/><rect width="1200" height="1460" rx="24" fill="url(#dots)"/>
+
+<text x="56" y="49" class="eyebrow" >COMMENT AUTOMATIONS / ARCHITECTURE</text>
+<text x="56" y="105" class="title" style="font-size:43px">One comment. One durable conversation.</text>
+<text x="56" y="143" class="body" >Follow the pricing scenario from arrival to delivery.</text>
+<rect x="64" y="180" width="680" height="122" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="217" r="19" fill="#3a2655"/>
+<text x="102" y="224" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">1</text>
+<text x="138" y="223" class="title" >Comment → Kafka</text>
+<text x="138" y="256" class="body" >Existing social integration publishes “pricing”.</text>
+<text x="138" y="284" class="body" >social.inbound · keyed by platform / account / participant</text>
+<rect x="804" y="180" width="340" height="122" rx="16" fill="#17202d" stroke="#425b75"/>
+<text x="828" y="216" class="eyebrow" >EXISTING INTEGRATION</text>
+<text x="828" y="249" class="body" >Receives comments + DMs</text>
+<text x="828" y="278" class="body" >Sends replies + messages</text>
+<rect x="40" y="330" width="728" height="878" rx="20" fill="#130f20" stroke="#59446f"/>
+<text x="64" y="362" class="eyebrow" >GO SERVICE · STATELESS REPLICAS</text>
+<path d="M404 302V382" class="edge"/>
+<rect x="64" y="386" width="680" height="110" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="423" r="19" fill="#3a2655"/>
+<text x="102" y="430" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">2</text>
+<text x="138" y="429" class="title" >Match rules in memory</text>
+<text x="138" y="462" class="body" >Account + post index → compiled keywords</text>
+<rect x="804" y="386" width="340" height="110" rx="16" fill="#1c2029" stroke="#485061"/>
+<text x="828" y="421" class="eyebrow" >NO MATCH</text>
+<text x="828" y="452" class="body" >Acknowledge and stop</text>
+<text x="828" y="478" class="small" >Fresh cache: zero DB calls</text>
+<path d="M744 442H802" class="edge"/>
+<path d="M404 496V540" class="edge"/>
+<rect x="64" y="544" width="680" height="110" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="581" r="19" fill="#3a2655"/>
+<text x="102" y="588" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">3</text>
+<text x="138" y="587" class="title" >Admit once, enqueue work</text>
+<text x="138" y="620" class="body" >Deduplicate · repeat policy · reserve conversation</text>
+<rect x="804" y="544" width="340" height="234" rx="16" fill="#142a29" stroke="#538f80"/>
+<text x="828" y="580" class="eyebrow" style="fill:#95decb">POSTGRESQL</text>
+<text x="828" y="618" class="title" >The source of truth</text>
+<text x="828" y="656" class="body" >Versions · sessions · steps</text>
+<text x="828" y="687" class="body" >Inbox · jobs · history</text>
+<text x="828" y="722" class="small" >State + next job commit together</text>
+<text x="828" y="750" class="small" >Leases + fencing protect workers</text>
+<path d="M744 599H802" class="edge" style="stroke:#80d5bd;marker-end:url(#mint)"/>
+<path d="M404 654V698" class="edge"/>
+<rect x="64" y="702" width="680" height="130" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="739" r="19" fill="#3a2655"/>
+<text x="102" y="746" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">4</text>
+<text x="138" y="745" class="title" >Reply + ask for an email</text>
+<text x="138" y="778" class="body" >“Sent you a DM!” + email request by DM</text>
+<text x="138" y="813" class="small" >Activate reply capture in Kafka before sending the prompt.</text>
+<path d="M404 832V876" class="edge"/>
+<rect x="64" y="880" width="680" height="164" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="917" r="19" fill="#3a2655"/>
+<text x="102" y="924" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">5</text>
+<text x="138" y="923" class="title" >Persist the wait. Release the worker.</text>
+<text x="138" y="956" class="body" >Incoming DM → conversation router → durable inbox.</text>
+<rect x="138" y="978" width="170" height="40" rx="8" fill="#16332d" stroke="#41755e"/>
+<text x="223" y="1004" class="small" text-anchor="middle" style="fill:#9cdec5">Valid email ↓</text>
+<rect x="318" y="978" width="190" height="40" rx="8" fill="#342a20" stroke="#766039"/>
+<text x="413" y="1004" class="small" text-anchor="middle" style="fill:#e4c584">Invalid → re-ask</text>
+<rect x="518" y="978" width="200" height="40" rx="8" fill="#252031" stroke="#51455f"/>
+<text x="618" y="1004" class="small" text-anchor="middle">Timeout → stop</text>
+<rect x="804" y="880" width="340" height="164" rx="16" fill="#20182f" stroke="#8266a3"/>
+<text x="828" y="916" class="eyebrow" >LATER · INCOMING DM</text>
+<text x="828" y="951" class="title" >“buyer@example.com”</text>
+<text x="828" y="984" class="body" >Social integration → Kafka</text>
+<text x="828" y="1015" class="small" >Same conversation partition</text>
+<path d="M804 957H746" class="edge"/>
+<path d="M223 1044V1066H404V1084" class="edge" style="stroke:#80d5bd;marker-end:url(#mint)"/>
+<rect x="64" y="1088" width="680" height="112" rx="16" fill="#21182f" stroke="#634d7e"/>
+<circle cx="102" cy="1125" r="19" fill="#3a2655"/>
+<text x="102" y="1132" class="body" text-anchor="middle" style="fill:#eadbff;font-weight:600">6</text>
+<text x="138" y="1131" class="title" >Send the link by DM</text>
+<text x="138" y="1164" class="body" >Same account · stable idempotency key</text>
+<text x="138" y="1192" class="body" >Confirmed send → session completed</text>
+<rect x="804" y="1088" width="340" height="104" rx="16" fill="#17202d" stroke="#425b75"/>
+<text x="828" y="1123" class="eyebrow" >DELIVERY BOUNDARY</text>
+<text x="828" y="1155" class="body" >HTTP → messaging service</text>
+<text x="828" y="1181" class="small" >Local mode records sends only</text>
+<path d="M744 1140H802" class="edge"/>
+<rect x="40" y="1240" width="1104" height="166" rx="16" fill="#1b1628" stroke="#493854"/>
+<text x="64" y="1273" class="eyebrow" >AUTHOR ONCE · REUSE FOR EVERY COMMENT</text>
+<text x="64" y="1314" class="title" >React editor → workspace proxy → Go API → PostgreSQL</text>
+<text x="64" y="1350" class="body" >Publish an immutable version + rule outbox → Kafka automation.rules → every replica</text>
+<text x="64" y="1382" class="small" >Local caches: demand-loaded, bounded by LRU + TTL. Running sessions keep their pinned version.</text>
+<text x="56" y="1440" class="small" >Solid arrows show event progress. Numbered stages inside the frame are modules, not separate services.</text>
+</svg>
