@@ -1,5 +1,7 @@
 # 001. Inbound comment events
 
+[Architecture index](README.md) · [Trigger matching and cache](002-trigger-matching-and-cache.md)
+
 Each social platform integration converts a new comment into a common event and publishes it to Kafka. The automation module uses the connected account, post, and comment text to find a matching rule.
 
 ## Message format
@@ -51,6 +53,8 @@ A consumer reading a partition sequentially sees records in the order Kafka appe
 
 ### Idempotency key
 
-The store can enforce uniqueness with a composite constraint on the five key fields. The consumer records the key and the processing decision in one transaction, then commits the Kafka offset after the transaction succeeds. On redelivery, the existing key prevents a second run. If the transaction rolls back, the consumer can retry the entire operation.
+The store enforces uniqueness with a composite constraint on these five fields. The [matching pipeline](002-trigger-matching-and-cache.md#deduplicate-after-matching) records only matching events: the decision, pending sessions, and session outbox commit together before acknowledging Kafka. Repeat-policy denials are also recorded.
+
+Non-matches leave no durable decision, so redelivery after a rule change can produce a match. Failed cache loads and admission transactions retry the same record with backoff. Invalid payloads stop the consumer without acknowledging the record.
 
 For example, two comments with identical text from the same author on the same post share a partition key. Their distinct comment IDs give them separate idempotency keys. Redelivering either comment preserves both of its keys. Comment text, delivery time, schema version, and per-publication UUIDs are excluded from the idempotency key.

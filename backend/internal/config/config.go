@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"blotato-comment-automation/internal/feature/matching"
 	"blotato-comment-automation/shared/kafka"
 
 	"gopkg.in/yaml.v3"
@@ -15,11 +16,16 @@ type Config struct {
 	Database struct {
 		URL string `yaml:"url"`
 	} `yaml:"database"`
-	Kafka kafka.Config `yaml:"messaging"`
+	Kafka    kafka.Config    `yaml:"messaging"`
+	Matching matching.Config `yaml:"matching"`
+	HTTP     struct {
+		Address string `yaml:"address"`
+		Token   string `yaml:"token"`
+	} `yaml:"http"`
 }
 
 func Load(path string) (Config, error) {
-	var cfg Config
+	cfg := Config{Matching: matching.DefaultConfig()}
 	f, err := os.Open(path)
 	if err != nil {
 		return cfg, err
@@ -44,6 +50,15 @@ func Load(path string) (Config, error) {
 	}
 	if strings.TrimSpace(cfg.Kafka.GroupID) == "" || strings.TrimSpace(cfg.Kafka.Topic) == "" {
 		return cfg, errors.New("messaging.group_id and messaging.topic are required")
+	}
+	if strings.TrimSpace(cfg.Kafka.RulesTopic) == "" || cfg.Kafka.RulesTopic == cfg.Kafka.Topic {
+		return cfg, errors.New("messaging.rules_topic must be separate from the inbound topic")
+	}
+	if cfg.HTTP.Address == "" || len(cfg.HTTP.Token) < 16 {
+		return cfg, errors.New("http.address and an internal http.token of at least 16 characters are required")
+	}
+	if err := cfg.Matching.Validate(); err != nil {
+		return cfg, err
 	}
 	return cfg, nil
 }

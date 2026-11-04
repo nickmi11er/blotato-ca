@@ -1,54 +1,65 @@
-package inbound_test
+package inbound
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"sync/atomic"
+	"errors"
 	"testing"
-	"time"
 
-	"blotato-comment-automation/internal/db"
-	"blotato-comment-automation/internal/feature/inbound"
-	"blotato-comment-automation/shared/postgres"
+	"blotato-comment-automation/internal/feature/automation"
 )
 
-func TestConcurrentDeliveriesRecordOneComment(t *testing.T) {
-	dsn := os.Getenv("TEST_DATABASE_URL")
-	if dsn == "" {
-		t.Skip("set TEST_DATABASE_URL to an isolated PostgreSQL database")
+type matcherStub struct {
+	calls   int
+	err     error
+	matches []automation.Match
+}
+
+func (m *matcherStub) Match(context.Context, string, string, string, string) ([]automation.Match, error) {
+	m.calls++
+	return m.matches, m.err
+}
+
+type repositoryStub struct {
+	calls int
+	err   error
+}
+
+func (r *repositoryStub) Record(context.Context, Comment, []automation.Match) (bool, error) {
+	r.calls++
+	return true, r.err
+}
+
+const external = `{"type":"CommentReceived","schema_version":1,"platform":"instagram","account_id":"a","occurred_at":"2026-11-03T09:15:00Z","data":{"post_id":"p","comment_id":"c","author_id":"u","is_own_comment":false,"text":"pricing"}}`
+
+func TestHandlerSkipsDatabaseForNonmatchesAndPropagatesFailures(t *testing.T) {
+	m := &matcherStub{}
+	r := &repositoryStub{}
+	h := NewHandler(r, m)
+	if err := h.Handle(t.Context(), []byte(external)); err != nil || r.calls != 0 {
+		t.Fatal("nonmatch wrote to database", err)
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
-	defer cancel()
-	database, err := postgres.New(ctx, dsn)
-	if err != nil {
+	m.err = errors.New("database offline")
+	if err := h.Handle(t.Context(), []byte(external)); err == nil || r.calls != 0 {
+		t.Fatal("failed fill acknowledged")
+	}
+	m.err = nil
+	m.matches = []automation.Match{{AutomationID: "automation"}}
+	r.err = errors.New("commit failed")
+	if err := h.Handle(t.Context(), []byte(external)); err == nil || r.calls != 1 {
+		t.Fatal("failed admission acknowledged")
+	}
+}
+func TestOwnCommentAndInvalidEventsDoNotReachMatcher(t *testing.T) {
+	m := &matcherStub{}
+	h := NewHandler(&repositoryStub{}, m)
+	own := `{"type":"CommentReceived","schema_version":1,"platform":"instagram","account_id":"a","occurred_at":"2026-11-03T09:15:00Z","data":{"post_id":"p","comment_id":"c","author_id":"a","is_own_comment":true,"text":"pricing"}}`
+	if err := h.Handle(t.Context(), []byte(own)); err != nil {
 		t.Fatal(err)
 	}
-	defer database.Close()
-	if err := db.Migrate(ctx, database.GetPool()); err != nil {
-		t.Fatal(err)
+	if err := h.Handle(t.Context(), []byte(`{"schema_version":99}`)); err == nil {
+		t.Fatal("invalid event accepted")
 	}
-	c := inbound.Comment{Type: "CommentReceived", Platform: "instagram", AccountID: fmt.Sprintf("test-%d", time.Now().UnixNano())}
-	c.Data.PostID, c.Data.CommentID = "post", "comment"
-	defer database.Exec(ctx, "DELETE FROM processed_comments WHERE account_id = $1", c.AccountID)
-	store := inbound.NewRepository(database)
-	var inserted atomic.Int32
-	done := make(chan error, 8)
-	for range cap(done) {
-		go func() {
-			fresh, err := store.Record(ctx, c)
-			if fresh {
-				inserted.Add(1)
-			}
-			done <- err
-		}()
-	}
-	for range cap(done) {
-		if err := <-done; err != nil {
-			t.Error(err)
-		}
-	}
-	if inserted.Load() != 1 {
-		t.Fatalf("got %d successful inserts, want 1", inserted.Load())
+	if m.calls != 0 {
+		t.Fatal("unexpected matcher call")
 	}
 }

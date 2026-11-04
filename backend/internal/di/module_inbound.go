@@ -1,6 +1,7 @@
 package di
 
 import (
+	"blotato-comment-automation/internal/feature/admission"
 	"blotato-comment-automation/internal/feature/inbound"
 )
 
@@ -26,7 +27,11 @@ func (m *InboundModule) Handler() (*inbound.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.handler = inbound.NewHandler(repository)
+	cache, err := m.Automation().Cache()
+	if err != nil {
+		return nil, err
+	}
+	m.handler = inbound.NewHandler(repository, cache)
 	return m.handler, nil
 }
 
@@ -38,6 +43,6 @@ func (m *InboundModule) Repository() (inbound.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.repository = inbound.NewRepository(database)
+	m.repository = admission.NewRepository(database.GetPool())
 	return m.repository, nil
 }

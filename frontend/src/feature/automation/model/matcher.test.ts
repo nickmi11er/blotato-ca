@@ -149,3 +149,21 @@ test("restored drafts keep supported settings and flag unavailable scope", () =>
     defaultDraft,
   );
 });
+
+// Same cases run against the backend evaluator.
+import matcherFixtures from "./testdata/matching.json";
+import type { MatchOperator } from "./types";
+test("backend and editor share Unicode matching semantics", () => {
+  for (const fixture of matcherFixtures) {
+    assert.equal(
+      textMatches(
+        fixture.text,
+        fixture.term,
+        fixture.operator as MatchOperator,
+        fixture.case_sensitive ?? false,
+      ),
+      fixture.expected,
+      `${fixture.operator}: ${fixture.text}`,
+    );
+  }
+});

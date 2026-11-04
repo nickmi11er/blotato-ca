@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -10,9 +11,10 @@ import (
 )
 
 type Config struct {
-	Brokers []string `yaml:"broker"`
-	GroupID string   `yaml:"group_id"`
-	Topic   string   `yaml:"topic"`
+	Brokers    []string `yaml:"broker"`
+	GroupID    string   `yaml:"group_id"`
+	Topic      string   `yaml:"topic"`
+	RulesTopic string   `yaml:"rules_topic"`
 }
 type Consumer struct{ reader *kafkago.Reader }
 type MessageHandler func(context.Context, []byte) error
@@ -37,7 +39,7 @@ func (c *Consumer) Consume(ctx context.Context, handle MessageHandler) error {
 		if err != nil {
 			return fmt.Errorf("fetch: %w", err)
 		}
-		if err = handle(ctx, msg.Value); err != nil {
+		if err = retryHandle(ctx, handle, msg.Value); err != nil {
 			return fmt.Errorf("process %s[%d] offset %d: %w", msg.Topic, msg.Partition, msg.Offset, err)
 		}
 		if err = c.tryCommit(ctx, msg); err != nil {
@@ -62,5 +64,33 @@ func (c *Consumer) tryCommit(ctx context.Context, msg kafkago.Message) error {
 			return ctx.Err()
 		case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
 		}
+	}
+}
+
+func retryHandle(ctx context.Context, handle MessageHandler, value []byte) error {
+	backoff := 100 * time.Millisecond
+	for attempt := 1; ; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := handle(ctx, value)
+		if err == nil {
+			return nil
+		}
+		var transient interface{ Retryable() bool }
+		if !errors.As(err, &transient) || !transient.Retryable() {
+			return err
+		}
+		if attempt == 1 || attempt%10 == 0 {
+			slog.WarnContext(ctx, "retrying comment processing", "attempt", attempt, "error", err)
+		}
+		timer := time.NewTimer(backoff)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+		backoff = min(backoff*2, 5*time.Second)
 	}
 }

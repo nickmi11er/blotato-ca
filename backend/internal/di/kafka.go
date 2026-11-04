@@ -10,6 +10,7 @@ type KafkaModule struct {
 	*Services
 
 	consumer *kafka.Consumer
+	rules    *kafka.Broadcast
 }
 
 func (s *Services) Kafka() *KafkaModule {
@@ -30,4 +31,18 @@ func (m *KafkaModule) Consumer() (*kafka.Consumer, error) {
 	m.Gc().Add(func(context.Context) error { return consumer.Close() })
 	m.consumer = consumer
 	return consumer, nil
+}
+
+func (m *KafkaModule) Rules() (*kafka.Broadcast, error) {
+	if m.rules != nil {
+		return m.rules, nil
+	}
+	cfg := m.Config().Kafka
+	rules, err := kafka.NewBroadcast(m.Ctx(), cfg.Brokers, cfg.RulesTopic)
+	if err != nil {
+		return nil, err
+	}
+	m.Gc().Add(func(context.Context) error { return rules.Close() })
+	m.rules = rules
+	return rules, nil
 }

@@ -1,0 +1,119 @@
+[
+  {
+    "text": "Send PRICING please!",
+    "term": "pricing",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "repricing",
+    "term": "pricing",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "pre_pricing",
+    "term": "pricing",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "pricingguide",
+    "term": "pricing",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "repricing",
+    "term": "pricing",
+    "operator": "contains",
+    "expected": true
+  },
+  {
+    "text": " PRICING ",
+    "term": "pricing",
+    "operator": "exact",
+    "expected": true
+  },
+  {
+    "text": "PRICING",
+    "term": "pricing",
+    "operator": "exact",
+    "case_sensitive": true,
+    "expected": false
+  },
+  {
+    "text": "pricing?",
+    "term": "pricing",
+    "operator": "exact",
+    "expected": false
+  },
+  {
+    "text": "Send price\u00a0\tlist!",
+    "term": "price list",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "price, list",
+    "term": "price list",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "Какая цена?",
+    "term": "цена",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "Переоценах",
+    "term": "цена",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "cafe\u0301?",
+    "term": "café",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "pricing\u0301",
+    "term": "pricing",
+    "operator": "whole_word",
+    "expected": false
+  },
+  {
+    "text": "pricing+ please",
+    "term": "pricing+",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "a.b please",
+    "term": "a.b",
+    "operator": "whole_word",
+    "expected": true
+  },
+  {
+    "text": "axb please",
+    "term": "a.b",
+    "operator": "whole_word",
+    "expected": false
+  },
+  { "text": "ΟΣ", "term": "ος", "operator": "exact", "expected": true },
+  { "text": "İ", "term": "i\u0307", "operator": "exact", "expected": true },
+  {
+    "text": "\ufeffpricing\ufeff",
+    "term": "pricing",
+    "operator": "exact",
+    "expected": true
+  },
+  {
+    "text": "\u0085pricing",
+    "term": "pricing",
+    "operator": "exact",
+    "expected": false
+  }
+]

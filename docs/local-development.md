@@ -1,5 +1,7 @@
 # Local development
 
+See the [architecture index](architecture/README.md) for the inbound contract and trigger matching/cache design. The commands below describe the currently implemented services.
+
 The trigger-builder frontend is in `frontend`. The React prototype uses demo data and browser-local draft storage; it can be explored independently of the backend. See [frontend setup](../frontend/README.md).
 
 From the repository root, build and start the frontend and backend with PostgreSQL and Kafka:
@@ -13,7 +15,7 @@ Open the frontend at `http://localhost:3000`. To start only the frontend, use `d
 
 For frontend development with hot reload, run `cd frontend`, `npm ci`, then `npm run dev` in a separate shell. Vite prints its local URL, normally `http://127.0.0.1:5173`.
 
-The `kafka-init` service creates `social.inbound` with three partitions before the backend starts. The backend uses `backend/config.docker.yml`, mounted read-only as `/app/config.yml`, with Docker network addresses for PostgreSQL and Kafka.
+The `kafka-init` service creates `social.inbound` with three partitions and `automation.rules` with one partition before the backend starts. The backend uses `backend/config.docker.yml`, mounted read-only as `/app/config.yml`, with Docker network addresses for PostgreSQL and Kafka.
 
 To run the backend directly with Go instead, start only the dependencies and topic initialization, then run the service from `backend`:
 
@@ -27,7 +29,25 @@ The Go module, service code, and `config.yml` live in `backend`. The consumer re
 
 On SIGINT or SIGTERM, the consumer stops reading and processing records, then runs the registered shutdown hooks with a separate 10-second timeout. Kafka closes before PostgreSQL. Initialization failures also close resources already created.
 
-The consumer applies embedded Goose migrations at startup. It reads one Kafka record at a time. For each external comment it inserts the five-part key into PostgreSQL with a single atomic statement. It commits the offset after a successful insert or a confirmed duplicate. Own comments are skipped. A decoding, database, or offset-commit failure stops the consumer. Inspect the error before restarting. A malformed record will stop this group again until the record is handled.
+The backend applies embedded Goose migrations at startup. It matches comments against a bounded local cache, then atomically records matching decisions, repeat-policy admission, pending sessions, and session outbox commands. Fresh non-matches and own comments require no database write. Infrastructure failures retry without acknowledging the record; malformed events stop the consumer.
+
+## Publish a trigger
+
+The internal API listens on `127.0.0.1:8080`. The checked-in bearer token is for local development; a trusted gateway/integration holds this credential. The frontend still uses browser-local storage. Workflow JSON is stored but not executed.
+
+Register the account, save a draft, and publish it before sending a comment:
+
+```sh
+api=http://127.0.0.1:8080/v1/workspaces/demo
+auth='Authorization: Bearer local-development-internal-token'
+curl --fail-with-body -X PUT "$api/accounts/acc_42" -H "$auth" -H 'Content-Type: application/json' -d '{"platform":"instagram"}'
+curl --fail-with-body -X PUT "$api/automations/pricing" -H "$auth" -H 'Content-Type: application/json' -d '{"name":"Pricing","trigger":{"schema_version":1,"scopes":[{"account_id":"acc_42","posts":{"mode":"all"}}],"comment":{"mode":"keywords","operator":"whole_word","logic":"any","keywords":["pricing"],"exclusions":[],"case_sensitive":false},"repeat":{"mode":"skip_active"}},"workflow":{"steps":[]}}'
+curl --fail-with-body -X POST "$api/automations/pricing/publish" -H "$auth"
+```
+
+`GET` on the automation returns its draft and publication status. `POST /disable` removes live bindings; `DELETE` on the automation deletes it while preserving version/session history. `PUT` changes only the draft. Publication propagates asynchronously; allow the outbox notification to reach consumers before testing a newly published rule.
+
+## Process a comment
 
 To try duplicate delivery, run the following in a second shell from the repository root. The Kafka record value is the version 1 JSON payload. The sample uses a JSON array as a demonstration key encoding.
 
@@ -35,10 +55,24 @@ To try duplicate delivery, run the following in a second shell from the reposito
 event='{"type":"CommentReceived","schema_version":1,"platform":"instagram","account_id":"acc_42","occurred_at":"2026-11-03T09:15:00Z","data":{"post_id":"17890001","comment_id":"18050002","author_id":"730003","is_own_comment":false,"text":"pricing"}}'
 key='["instagram","acc_42","730003"]'
 printf '%s\t%s\n' "$key" "$event" "$key" "$event" | docker compose exec -T kafka /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic social.inbound --property parse.key=true
-docker compose exec -T postgres psql -U automation -c 'TABLE processed_comments'
+docker compose exec -T postgres psql -U automation -c 'TABLE comment_decisions'
+docker compose exec -T postgres psql -U automation -c 'TABLE automation_sessions'
 ```
 
-On a fresh database the two deliveries produce one row. To run the concurrency test against the local database, run `TEST_DATABASE_URL='postgres://automation:local@127.0.0.1:25432/automation?sslmode=disable' go test -count=1 ./...` from `backend`. Stop the Go process with Ctrl+C, or the container with `docker compose stop backend`. Stop the full stack with `docker compose stop` from the repository root. Compose allows 15 seconds for the backend to stop, including its 10-second shutdown timeout.
+On a fresh database, the duplicate deliveries produce one decision and one pending session. Use a new comment ID when repeating the example: IDs from the original ingestion-only version may already exist in `processed_comments`. Sessions remain pending until an executor is implemented, so `skip_active` rejects subsequent starts for the same participant.
+
+Stop the Go process with Ctrl+C, or use `docker compose stop backend`. Compose allows 15 seconds for shutdown.
+
+## Verify
+
+From `backend`, run the integration tests with local dependencies:
+
+```sh
+TEST_DATABASE_URL='postgres://automation:local@127.0.0.1:25432/automation?sslmode=disable' TEST_KAFKA_BROKER='127.0.0.1:29094' go test -race -count=1 ./...
+go vet ./...
+```
+
+Each PostgreSQL test creates and removes its own schema. Without these environment variables, external integration tests are skipped. Go and React run the same Unicode matching cases from `frontend/src/feature/automation/model/testdata/matching.json`; run `npm run check` in `frontend` as well.
 
 ## Generate database code
 

@@ -5,4 +5,20 @@ messaging:
   broker:
     - 127.0.0.1:29094
   topic: social.inbound
+  rules_topic: automation.rules
   group_id: comment-automation
+
+# Internal API credential for local development only.
+http:
+  address: "127.0.0.1:8080"
+  token: local-development-internal-token
+
+matching:
+  max_bytes: 67108864
+  idle_ttl: 20m
+  fresh_ttl: 1m
+  negative_ttl: 15s
+  load_timeout: 5s
+  max_loads: 16
+  maintenance_interval: 5s
+  reconcile_batch: 256

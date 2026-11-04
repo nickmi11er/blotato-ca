@@ -10,12 +10,13 @@ import (
 
 // Services resolves dependencies once during single-threaded startup.
 type Services struct {
-	ctx      context.Context
-	cfg      config.Config
-	gc       graceful.Graceful
-	database *postgres.DB
-	kafka    *KafkaModule
-	inbound  *InboundModule
+	ctx        context.Context
+	cfg        config.Config
+	gc         graceful.Graceful
+	database   *postgres.DB
+	kafka      *KafkaModule
+	inbound    *InboundModule
+	automation *AutomationModule
 }
 
 func NewServices(ctx context.Context, cfg config.Config) *Services {

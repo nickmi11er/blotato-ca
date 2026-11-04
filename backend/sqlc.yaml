@@ -12,3 +12,23 @@ sql:
         emit_pointers_for_null_types: true
         package: "inboundDB"
         out: "internal/db/sqlcDB/inbound"
+  - engine: "postgresql"
+    schema: "internal/db/migrations"
+    queries: "internal/db/queries/automation.sql"
+    gen:
+      go:
+        sql_package: "pgx/v5"
+        emit_interface: true
+        omit_unused_structs: true
+        package: "automationDB"
+        out: "internal/db/sqlcDB/automation"
+  - engine: "postgresql"
+    schema: "internal/db/migrations"
+    queries: "internal/db/queries/admission.sql"
+    gen:
+      go:
+        sql_package: "pgx/v5"
+        emit_interface: true
+        omit_unused_structs: true
+        package: "admissionDB"
+        out: "internal/db/sqlcDB/admission"
