@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	db "blotato-comment-automation/internal/db/sqlcDB/automation"
+	"blotato-comment-automation/internal/feature/workflow"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -169,11 +170,19 @@ func (s *Service) mutate(ctx context.Context, tenant, id, action string) error {
 			if err = checkAccounts(ctx, q, tenant, d); err != nil {
 				return err
 			}
+			plan, err := workflow.Compile(d.Workflow)
+			if err != nil {
+				return fmt.Errorf("%w: %v", ErrInvalid, err)
+			}
+			compiled, err := json.Marshal(plan)
+			if err != nil {
+				return err
+			}
 			revision, err := q.NextRevision(ctx, db.NextRevisionParams{TenantID: tenant, AutomationID: id})
 			if err != nil {
 				return err
 			}
-			if err = q.AddVersion(ctx, db.AddVersionParams{TenantID: tenant, AutomationID: id, Revision: int64(revision), Document: a.Draft}); err != nil {
+			if err = q.AddVersion(ctx, db.AddVersionParams{TenantID: tenant, AutomationID: id, Revision: int64(revision), Document: a.Draft, ExecutionPlan: compiled}); err != nil {
 				return err
 			}
 			if err = q.SetPublished(ctx, db.SetPublishedParams{TenantID: tenant, ID: id, Revision: int64(revision)}); err != nil {

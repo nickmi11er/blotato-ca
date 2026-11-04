@@ -9,8 +9,9 @@ import (
 type KafkaModule struct {
 	*Services
 
-	consumer *kafka.Consumer
-	rules    *kafka.Broadcast
+	consumer  *kafka.Consumer
+	rules     *kafka.Broadcast
+	publisher *kafka.Publisher
 }
 
 func (s *Services) Kafka() *KafkaModule {
@@ -45,4 +46,17 @@ func (m *KafkaModule) Rules() (*kafka.Broadcast, error) {
 	m.Gc().Add(func(context.Context) error { return rules.Close() })
 	m.rules = rules
 	return rules, nil
+}
+
+func (m *KafkaModule) Publisher() (*kafka.Publisher, error) {
+	if m.publisher != nil {
+		return m.publisher, nil
+	}
+	publisher, err := kafka.NewPublisher(m.Config().Kafka)
+	if err != nil {
+		return nil, err
+	}
+	m.Gc().Add(func(context.Context) error { return publisher.Close() })
+	m.publisher = publisher
+	return publisher, nil
 }

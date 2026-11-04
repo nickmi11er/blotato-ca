@@ -47,14 +47,37 @@ The Kafka record value is UTF-8 JSON. Version 1 requires every field shown below
 
 For a comment, the participant is its author. For an inbound direct message (DM), the participant is its sender. In the example, the integration uses `730003` as the participant ID in the Kafka key. The payload already identifies the author.
 
-To route a participant's comments and DMs to the same partition, producers must use the same topic, serialize the key to identical bytes, and use the same key-based partitioning strategy. This assumes a stable partition count. The implementation must specify a shared key encoding. If a platform issues different IDs for comment authors and DM senders, the integration needs a verified mapping to a common participant ID.
+To route a participant's comments and DMs to the same partition, producers must use the same topic, serialize the key to identical bytes, and use the same key-based partitioning strategy. Use the compact JSON array encoding produced by `shared/kafka.RoutingKey` (Go JSON string escaping), for example `["instagram","acc_42","730003"]`, and Java-compatible Murmur2 partitioning. The configured partition count is fixed at three locally; the consumer validates the count, key bytes, and partition. Changing the count requires a coordinated routing migration. If a platform issues different IDs for comment authors and DM senders, the integration needs a verified mapping to a common participant ID.
 
-A consumer reading a partition sequentially sees records in the order Kafka appended them. An integration delay can cause a user's earlier action to arrive later. If the participant has multiple automation runs, identifying which run a reply belongs to is a separate decision.
+A consumer reading a partition sequentially sees records in the order Kafka appended them. An integration delay can cause a user's earlier action to arrive later. The [session and DM routing protocol](003-session-execution-and-dm-routing.md#dm-routing-cache-and-activation-barrier) uses ordered conversation activation and exclusive reply routing to make negative DM caching safe.
 
 ### Idempotency key
 
-The store enforces uniqueness with a composite constraint on these five fields. The [matching pipeline](002-trigger-matching-and-cache.md#deduplicate-after-matching) records only matching events: the decision, pending sessions, and session outbox commit together before acknowledging Kafka. Repeat-policy denials are also recorded.
+The store enforces uniqueness with a composite constraint on these five fields. The [matching pipeline](002-trigger-matching-and-cache.md#deduplicate-after-matching) records only matching events: the decision, pending sessions, and execution jobs commit together before acknowledging Kafka. Repeat-policy denials are also recorded.
 
 Non-matches leave no durable decision, so redelivery after a rule change can produce a match. Failed cache loads and admission transactions retry the same record with backoff. Invalid payloads stop the consumer without acknowledging the record.
 
 For example, two comments with identical text from the same author on the same post share a partition key. Their distinct comment IDs give them separate idempotency keys. Redelivering either comment preserves both of its keys. Comment text, delivery time, schema version, and per-publication UUIDs are excluded from the idempotency key.
+
+## Direct messages and activation
+
+DMs use the same topic and routing key. `participant_id` must identify the same person as the comment author. `reply_to_message_id` is optional; all other fields below are required. Own messages and empty text are ignored.
+
+```json
+{
+  "type": "MessageReceived",
+  "schema_version": 1,
+  "platform": "instagram",
+  "account_id": "acc_42",
+  "occurred_at": "2026-11-03T09:16:00Z",
+  "data": {
+    "participant_id": "730003",
+    "conversation_id": "thread_1",
+    "message_id": "dm_1",
+    "is_own_message": false,
+    "text": "My email is alex@example.com"
+  }
+}
+```
+
+The backend also publishes `ActivateConversation` on this stream: a flat object with `type`, `schema_version: 1`, `platform`, `account_id`, `participant_id`, `session_id`, and `epoch`. It reserves a route before the question can be sent. Social integrations publish external comments and DMs; activation is an internal control event.

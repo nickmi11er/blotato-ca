@@ -23,7 +23,7 @@ func setup(t *testing.T, mode string) (*pgxpool.Pool, *admission.Repository, aut
 	if err := service.RegisterAccount(ctx, "tenant", "account", "instagram"); err != nil {
 		t.Fatal(err)
 	}
-	d := automation.Document{Name: "Pricing", Trigger: automation.Trigger{SchemaVersion: 1, Scopes: []automation.Scope{{AccountID: "account", Posts: automation.Posts{Mode: "all"}}}, Comment: automation.Predicate{Mode: "any", Operator: "exact", Logic: "any"}, Repeat: automation.Repeat{Mode: mode}}, Workflow: json.RawMessage(`{}`)}
+	d := automation.Document{Name: "Pricing", Trigger: automation.Trigger{SchemaVersion: 1, Scopes: []automation.Scope{{AccountID: "account", Posts: automation.Posts{Mode: "all"}}}, Comment: automation.Predicate{Mode: "any", Operator: "exact", Logic: "any"}, Repeat: automation.Repeat{Mode: mode}}, Workflow: json.RawMessage(`{"steps":[{"id":"reply","kind":"reply","text":"Thanks!"}]}`)}
 	if err := service.Save(ctx, "tenant", "automation", d); err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestConcurrentDuplicateCreatesOneSessionAndOutbox(t *testing.T) {
 	if inserted.Load() != 1 {
 		t.Fatal(inserted.Load())
 	}
-	for _, table := range []string{"processed_comments", "comment_decisions", "automation_sessions", "session_outbox"} {
+	for _, table := range []string{"processed_comments", "comment_decisions", "automation_sessions", "execution_jobs"} {
 		if count(t, pool, table) != 1 {
 			t.Fatal(table)
 		}
@@ -127,7 +127,7 @@ func TestAdmissionRollbackKeepsEventRetryable(t *testing.T) {
 	if _, err := repo.Record(t.Context(), c, []automation.Match{m, invalid}); err == nil {
 		t.Fatal("expected foreign key failure")
 	}
-	for _, table := range []string{"processed_comments", "comment_decisions", "automation_sessions", "session_outbox"} {
+	for _, table := range []string{"processed_comments", "comment_decisions", "automation_sessions", "execution_jobs"} {
 		if count(t, pool, table) != 0 {
 			t.Fatal("partial transaction: " + table)
 		}

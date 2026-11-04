@@ -17,7 +17,7 @@ import (
 )
 
 func document(account string) automation.Document {
-	return automation.Document{Name: "Pricing", Trigger: automation.Trigger{SchemaVersion: 1, Scopes: []automation.Scope{{AccountID: account, Posts: automation.Posts{Mode: "all"}}}, Comment: automation.Predicate{Mode: "keywords", Operator: "whole_word", Logic: "any", Keywords: []string{"pricing"}}, Repeat: automation.Repeat{Mode: "every"}}, Workflow: json.RawMessage(`{"steps":[]}`)}
+	return automation.Document{Name: "Pricing", Trigger: automation.Trigger{SchemaVersion: 1, Scopes: []automation.Scope{{AccountID: account, Posts: automation.Posts{Mode: "all"}}}, Comment: automation.Predicate{Mode: "keywords", Operator: "whole_word", Logic: "any", Keywords: []string{"pricing"}}, Repeat: automation.Repeat{Mode: "every"}}, Workflow: json.RawMessage(`{"steps":[{"id":"reply","kind":"reply","text":"Thanks!"}]}`)}
 }
 func TestPublishDisableDeleteAndDraftIsolation(t *testing.T) {
 	pool := testutil.Database(t)

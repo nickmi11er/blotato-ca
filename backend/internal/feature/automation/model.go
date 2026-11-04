@@ -19,6 +19,7 @@ var (
 
 type Document struct {
 	Name     string          `json:"name"`
+	Priority int             `json:"priority,omitempty"`
 	Trigger  Trigger         `json:"trigger"`
 	Workflow json.RawMessage `json:"workflow"`
 }
@@ -53,6 +54,7 @@ type Match struct {
 	AutomationID string `json:"automation_id"`
 	Revision     int64  `json:"revision"`
 	Repeat       string `json:"repeat"`
+	Priority     int    `json:"priority,omitempty"`
 }
 
 func ValidID(s string) bool {

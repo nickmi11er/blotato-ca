@@ -68,7 +68,7 @@ func (r *Repository) load(ctx context.Context, id, post string, generation int64
 		if err := d.Validate(); err != nil {
 			return fmt.Errorf("invalid published rule: %w", err)
 		}
-		result.Rules = append(result.Rules, Rule{Match: automation.Match{TenantID: a.TenantID, AutomationID: id, Revision: revision, Repeat: d.Trigger.Repeat.Mode}, Predicate: d.Trigger.Comment})
+		result.Rules = append(result.Rules, Rule{Match: automation.Match{TenantID: a.TenantID, AutomationID: id, Revision: revision, Repeat: d.Trigger.Repeat.Mode, Priority: d.Priority}, Predicate: d.Trigger.Comment})
 		return nil
 	}
 	if generation < 0 {

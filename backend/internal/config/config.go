@@ -6,6 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"blotato-comment-automation/internal/feature/conversation"
+	"blotato-comment-automation/internal/feature/delivery"
+	"blotato-comment-automation/internal/feature/execution"
 	"blotato-comment-automation/internal/feature/matching"
 	"blotato-comment-automation/shared/kafka"
 
@@ -13,7 +16,10 @@ import (
 )
 
 type Config struct {
-	Database struct {
+	Execution     execution.Config    `yaml:"execution"`
+	Conversations conversation.Config `yaml:"conversations"`
+	Delivery      delivery.Config     `yaml:"delivery"`
+	Database      struct {
 		URL string `yaml:"url"`
 	} `yaml:"database"`
 	Kafka    kafka.Config    `yaml:"messaging"`
@@ -25,7 +31,7 @@ type Config struct {
 }
 
 func Load(path string) (Config, error) {
-	cfg := Config{Matching: matching.DefaultConfig()}
+	cfg := Config{Matching: matching.DefaultConfig(), Execution: execution.DefaultConfig(), Conversations: conversation.DefaultConfig()}
 	f, err := os.Open(path)
 	if err != nil {
 		return cfg, err
@@ -58,6 +64,18 @@ func Load(path string) (Config, error) {
 		return cfg, errors.New("http.address and an internal http.token of at least 16 characters are required")
 	}
 	if err := cfg.Matching.Validate(); err != nil {
+		return cfg, err
+	}
+	if cfg.Kafka.Partitions < 1 {
+		return cfg, errors.New("messaging.partitions is required")
+	}
+	if err := cfg.Execution.Validate(); err != nil {
+		return cfg, err
+	}
+	if err := cfg.Conversations.Validate(); err != nil {
+		return cfg, err
+	}
+	if err := cfg.Delivery.Validate(); err != nil {
 		return cfg, err
 	}
 	return cfg, nil

@@ -81,14 +81,15 @@ func (q *Queries) AddRuleChange(ctx context.Context, arg AddRuleChangeParams) er
 }
 
 const addVersion = `-- name: AddVersion :exec
-INSERT INTO automation_versions (tenant_id, automation_id, revision, document) VALUES ($1, $2, $3, $4)
+INSERT INTO automation_versions (tenant_id, automation_id, revision, document, execution_plan) VALUES ($1, $2, $3, $4, $5)
 `
 
 type AddVersionParams struct {
-	TenantID     string
-	AutomationID string
-	Revision     int64
-	Document     []byte
+	TenantID      string
+	AutomationID  string
+	Revision      int64
+	Document      []byte
+	ExecutionPlan []byte
 }
 
 func (q *Queries) AddVersion(ctx context.Context, arg AddVersionParams) error {
@@ -97,6 +98,7 @@ func (q *Queries) AddVersion(ctx context.Context, arg AddVersionParams) error {
 		arg.AutomationID,
 		arg.Revision,
 		arg.Document,
+		arg.ExecutionPlan,
 	)
 	return err
 }

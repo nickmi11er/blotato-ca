@@ -12,7 +12,7 @@ import (
 
 // This is an internal control API. The bearer credential authorizes the trusted
 // integration/gateway for all workspaces; it is not a browser-user credential.
-func NewHTTPHandler(service *Service, token string) http.Handler {
+func NewHTTPHandler(service *Service, token string, extensions ...func(*http.ServeMux)) http.Handler {
 	mux := http.NewServeMux()
 	respond := func(w http.ResponseWriter, r *http.Request, err error) {
 		status := http.StatusInternalServerError
@@ -102,6 +102,9 @@ func NewHTTPHandler(service *Service, token string) http.Handler {
 			}
 			w.WriteHeader(http.StatusNoContent)
 		})
+	}
+	for _, extension := range extensions {
+		extension(mux)
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		credential := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")

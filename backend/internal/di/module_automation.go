@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"blotato-comment-automation/internal/feature/automation"
+	"blotato-comment-automation/internal/feature/execution"
 	"blotato-comment-automation/internal/feature/matching"
 )
 
@@ -77,8 +78,12 @@ func (m *AutomationModule) HTTP() (*http.Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	engine, err := m.Execution().Engine()
+	if err != nil {
+		return nil, err
+	}
 	cfg := m.Config().HTTP
-	server := &http.Server{Addr: cfg.Address, Handler: automation.NewHTTPHandler(service, cfg.Token), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second}
+	server := &http.Server{Addr: cfg.Address, Handler: automation.NewHTTPHandler(service, cfg.Token, execution.RegisterHTTP(engine)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 30 * time.Second}
 	m.Gc().Add(server.Shutdown)
 	m.server = server
 	return server, nil

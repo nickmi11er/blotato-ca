@@ -10,7 +10,7 @@ import (
 )
 
 const createSession = `-- name: CreateSession :exec
-INSERT INTO automation_sessions (id, tenant_id, automation_id, revision, account_id, participant_id) VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO automation_sessions (id, tenant_id, automation_id, revision, account_id, participant_id, origin) VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateSessionParams struct {
@@ -20,6 +20,7 @@ type CreateSessionParams struct {
 	Revision      int64
 	AccountID     string
 	ParticipantID string
+	Origin        []byte
 }
 
 func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) error {
@@ -30,21 +31,8 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) er
 		arg.Revision,
 		arg.AccountID,
 		arg.ParticipantID,
+		arg.Origin,
 	)
-	return err
-}
-
-const enqueueSession = `-- name: EnqueueSession :exec
-INSERT INTO session_outbox (session_id, payload) VALUES ($1, $2)
-`
-
-type EnqueueSessionParams struct {
-	SessionID string
-	Payload   []byte
-}
-
-func (q *Queries) EnqueueSession(ctx context.Context, arg EnqueueSessionParams) error {
-	_, err := q.db.Exec(ctx, enqueueSession, arg.SessionID, arg.Payload)
 	return err
 }
 

@@ -1,6 +1,6 @@
 # 002. Trigger matching and caching
 
-> **Implemented:** rule publication, cached matching, durable session admission, and cross-replica invalidation. Sessions remain pending; workflow execution and frontend API integration are the next steps.
+> **Implemented:** rule publication, cached matching, durable session admission, and cross-replica invalidation. Admitted sessions continue through the [execution engine](003-session-execution-and-dm-routing.md). Frontend API integration remains pending.
 
 [Architecture index](README.md) · [Inbound event contract](001-inbound-comment-events.md)
 
@@ -144,7 +144,7 @@ Bounded background reconciliation checks generations of resident accounts to rec
 
 To avoid writes for irrelevant traffic, the consumer acknowledges non-matches without inserting `processed_comments`. Compared with the original ingestion-only implementation, a redelivered non-match can match after rules change.
 
-For matching comments, one transaction records the event decision, applies repeat policy, creates pending sessions, and writes `SessionRequested` commands to `session_outbox`. These commands are not dispatched yet. The [event identity](001-inbound-comment-events.md#idempotency-key) prevents duplicate starts. Record outcomes for all matching automations, including repeat-policy denials, so a committed decision cannot gain new starts on redelivery.
+For matching comments, one transaction records the event decision, applies repeat policy, creates pending sessions, and enqueues start or conversation-activation jobs in `execution_jobs`. The [event identity](001-inbound-comment-events.md#idempotency-key) prevents duplicate starts. Record outcomes for all matching automations, including repeat-policy denials, so a committed decision cannot gain new starts on redelivery.
 
 Repeat policy is enforced through database constraints or atomic reservations, never cached session state:
 
@@ -152,4 +152,4 @@ Repeat policy is enforced through database constraints or atomic reservations, n
 - `once`: one start per automation, account, and participant, across posts and revisions.
 - `skip_active`: reject another start in that scope while a session is active, including waiting for a reply or timer.
 
-This keeps admission correct across replicas. Coordinating competing automations waiting on the same DM conversation remains a separate execution-model decision.
+This keeps admission correct across replicas. The [session execution model](003-session-execution-and-dm-routing.md) adds conversation ownership, asynchronous steps, and DM routing.

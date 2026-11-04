@@ -10,7 +10,6 @@ import (
 
 type Querier interface {
 	CreateSession(ctx context.Context, arg CreateSessionParams) error
-	EnqueueSession(ctx context.Context, arg EnqueueSessionParams) error
 	LockParticipant(ctx context.Context, arg LockParticipantParams) (string, error)
 	PriorSessions(ctx context.Context, arg PriorSessionsParams) (PriorSessionsRow, error)
 	RecordDecision(ctx context.Context, arg RecordDecisionParams) error

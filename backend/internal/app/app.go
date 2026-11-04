@@ -42,11 +42,17 @@ func New(ctx context.Context, configPath string) (_ *App, err error) {
 	if _, err = services.Automation().HTTP(); err != nil {
 		return nil, err
 	}
+	if _, err = services.Execution().Worker(); err != nil {
+		return nil, err
+	}
+	if _, err = services.Execution().Factory(); err != nil {
+		return nil, err
+	}
 	return application, nil
 }
 func (a *App) Run(ctx context.Context) (err error) {
 	defer func() { err = errors.Join(err, a.shutdown()) }()
-	handler, err := a.services.Inbound().Handler()
+	factory, err := a.services.Execution().Factory()
 	if err != nil {
 		return err
 	}
@@ -66,11 +72,16 @@ func (a *App) Run(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	worker, err := a.services.Execution().Worker()
+	if err != nil {
+		return err
+	}
 	group, runCtx := errgroup.WithContext(ctx)
+	group.Go(func() error { return worker.Run(runCtx) })
 	group.Go(func() error { return cache.Run(runCtx) })
 	group.Go(func() error { return changes.Consume(runCtx) })
 	group.Go(func() error { return changes.Run(runCtx) })
-	group.Go(func() error { return consumer.Consume(runCtx, handler.Handle) })
+	group.Go(func() error { return consumer.Consume(runCtx, factory.Partition) })
 	group.Go(func() error {
 		err := server.ListenAndServe()
 		if errors.Is(err, http.ErrServerClosed) {

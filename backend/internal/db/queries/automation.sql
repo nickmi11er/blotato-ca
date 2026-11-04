@@ -16,7 +16,7 @@ ON CONFLICT (tenant_id, id) DO UPDATE SET draft = EXCLUDED.draft;
 -- name: NextRevision :one
 SELECT (COALESCE(max(revision), 0) + 1)::bigint FROM automation_versions WHERE tenant_id = $1 AND automation_id = $2;
 -- name: AddVersion :exec
-INSERT INTO automation_versions (tenant_id, automation_id, revision, document) VALUES ($1, $2, $3, $4);
+INSERT INTO automation_versions (tenant_id, automation_id, revision, document, execution_plan) VALUES ($1, $2, $3, $4, $5);
 -- name: SetPublished :exec
 UPDATE automations SET revision = $3, enabled = true WHERE tenant_id = $1 AND id = $2;
 -- name: DisableAutomation :exec

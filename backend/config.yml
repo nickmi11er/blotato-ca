@@ -5,6 +5,7 @@ messaging:
   broker:
     - 127.0.0.1:29094
   topic: social.inbound
+  partitions: 3
   rules_topic: automation.rules
   group_id: comment-automation
 
@@ -22,3 +23,22 @@ matching:
   max_loads: 16
   maintenance_interval: 5s
   reconcile_batch: 256
+
+execution:
+  workers: 4
+  poll_interval: 500ms
+  lease: 30s
+  job_timeout: 10s
+  max_attempts: 5
+
+conversations:
+  max_bytes: 8388608
+  idle_ttl: 20m
+  fresh_ttl: 1m
+  negative_ttl: 15s
+
+# Local-only: stores requests in recorded_deliveries, never sends real messages.
+# Set mode: http and provide url/token for a real integration.
+delivery:
+  mode: recording
+  idempotency: true

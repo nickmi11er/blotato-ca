@@ -17,6 +17,7 @@ type Services struct {
 	kafka      *KafkaModule
 	inbound    *InboundModule
 	automation *AutomationModule
+	execution  *ExecutionModule
 }
 
 func NewServices(ctx context.Context, cfg config.Config) *Services {
