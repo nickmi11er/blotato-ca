@@ -27,7 +27,20 @@ export function validateDraft(
       "A selected account is no longer available. Update your account selection.",
     );
   if (draft.postScope === "selected") {
-    if (!draft.postIds.length) errors.push("Select at least one post.");
+    const selectedAccounts = draft.accountIds.filter(
+      (id) => (draft.scopeModes?.[id] ?? draft.postScope) === "selected",
+    );
+    if (
+      selectedAccounts.some(
+        (id) =>
+          !draft.postIds.some((key) =>
+            catalog.posts.some((p) => p.id === key && p.accountId === id),
+          ),
+      )
+    )
+      errors.push(
+        "Select at least one post for each account with a selected-post scope.",
+      );
     if (
       draft.postIds.some(
         (id) =>
@@ -64,13 +77,6 @@ export function validateDraft(
   )
     errors.push(
       "Use at most 30 terms per list, each no longer than 120 characters.",
-    );
-  if (
-    draft.reentry === "every" &&
-    walkSteps(draft.steps).some((step) => step.kind === "wait_reply")
-  )
-    errors.push(
-      "Flows waiting for replies need one active conversation per person. Change repeat behavior in the trigger settings.",
     );
   const needsDM = walkSteps(draft.steps).some(
     (step) =>

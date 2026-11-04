@@ -7,6 +7,8 @@ package automationDB
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const accountRules = `-- name: AccountRules :many
@@ -213,6 +215,17 @@ func (q *Queries) CountAutomations(ctx context.Context, tenantID string) (int64,
 	return count, err
 }
 
+const countTemplates = `-- name: CountTemplates :one
+SELECT count(*) FROM email_templates WHERE tenant_id=$1
+`
+
+func (q *Queries) CountTemplates(ctx context.Context, tenantID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countTemplates, tenantID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteAutomation = `-- name: DeleteAutomation :exec
 DELETE FROM automations WHERE tenant_id = $1 AND id = $2
 `
@@ -233,6 +246,20 @@ DELETE FROM rule_changes WHERE id = ANY($1::bigint[])
 
 func (q *Queries) DeleteRuleChanges(ctx context.Context, dollar_1 []int64) error {
 	_, err := q.db.Exec(ctx, deleteRuleChanges, dollar_1)
+	return err
+}
+
+const deleteTemplate = `-- name: DeleteTemplate :exec
+DELETE FROM email_templates WHERE tenant_id=$1 AND id=$2
+`
+
+type DeleteTemplateParams struct {
+	TenantID string
+	ID       string
+}
+
+func (q *Queries) DeleteTemplate(ctx context.Context, arg DeleteTemplateParams) error {
+	_, err := q.db.Exec(ctx, deleteTemplate, arg.TenantID, arg.ID)
 	return err
 }
 
@@ -290,18 +317,25 @@ func (q *Queries) Generations(ctx context.Context, dollar_1 []string) ([]Generat
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, tenant_id, platform FROM connected_accounts WHERE id = $1
+SELECT id, tenant_id, platform, name, handle, can_send_dm FROM connected_accounts WHERE id = $1
 `
 
 func (q *Queries) GetAccount(ctx context.Context, id string) (ConnectedAccount, error) {
 	row := q.db.QueryRow(ctx, getAccount, id)
 	var i ConnectedAccount
-	err := row.Scan(&i.ID, &i.TenantID, &i.Platform)
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Platform,
+		&i.Name,
+		&i.Handle,
+		&i.CanSendDm,
+	)
 	return i, err
 }
 
 const getAutomation = `-- name: GetAutomation :one
-SELECT tenant_id, id, draft, enabled, revision FROM automations WHERE tenant_id = $1 AND id = $2
+SELECT tenant_id, id, draft, enabled, revision, draft_version, published_draft_version, updated_at FROM automations WHERE tenant_id = $1 AND id = $2
 `
 
 type GetAutomationParams struct {
@@ -318,8 +352,159 @@ func (q *Queries) GetAutomation(ctx context.Context, arg GetAutomationParams) (A
 		&i.Draft,
 		&i.Enabled,
 		&i.Revision,
+		&i.DraftVersion,
+		&i.PublishedDraftVersion,
+		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getTemplate = `-- name: GetTemplate :one
+SELECT tenant_id, id, name, subject, body, revision FROM email_templates WHERE tenant_id=$1 AND id=$2
+`
+
+type GetTemplateParams struct {
+	TenantID string
+	ID       string
+}
+
+func (q *Queries) GetTemplate(ctx context.Context, arg GetTemplateParams) (EmailTemplate, error) {
+	row := q.db.QueryRow(ctx, getTemplate, arg.TenantID, arg.ID)
+	var i EmailTemplate
+	err := row.Scan(
+		&i.TenantID,
+		&i.ID,
+		&i.Name,
+		&i.Subject,
+		&i.Body,
+		&i.Revision,
+	)
+	return i, err
+}
+
+const listAccounts = `-- name: ListAccounts :many
+SELECT id, tenant_id, platform, name, handle, can_send_dm FROM connected_accounts WHERE tenant_id=$1 ORDER BY platform,id
+`
+
+func (q *Queries) ListAccounts(ctx context.Context, tenantID string) ([]ConnectedAccount, error) {
+	rows, err := q.db.Query(ctx, listAccounts, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ConnectedAccount
+	for rows.Next() {
+		var i ConnectedAccount
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Platform,
+			&i.Name,
+			&i.Handle,
+			&i.CanSendDm,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAutomations = `-- name: ListAutomations :many
+SELECT tenant_id, id, draft, enabled, revision, draft_version, published_draft_version, updated_at FROM automations WHERE tenant_id=$1 ORDER BY updated_at DESC,id
+`
+
+func (q *Queries) ListAutomations(ctx context.Context, tenantID string) ([]Automation, error) {
+	rows, err := q.db.Query(ctx, listAutomations, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Automation
+	for rows.Next() {
+		var i Automation
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.ID,
+			&i.Draft,
+			&i.Enabled,
+			&i.Revision,
+			&i.DraftVersion,
+			&i.PublishedDraftVersion,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPosts = `-- name: ListPosts :many
+SELECT tenant_id, account_id, id, title, published_at FROM social_posts WHERE tenant_id=$1 ORDER BY published_at DESC,account_id,id
+`
+
+func (q *Queries) ListPosts(ctx context.Context, tenantID string) ([]SocialPost, error) {
+	rows, err := q.db.Query(ctx, listPosts, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SocialPost
+	for rows.Next() {
+		var i SocialPost
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.AccountID,
+			&i.ID,
+			&i.Title,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTemplates = `-- name: ListTemplates :many
+SELECT tenant_id, id, name, subject, body, revision FROM email_templates WHERE tenant_id=$1 ORDER BY name,id
+`
+
+func (q *Queries) ListTemplates(ctx context.Context, tenantID string) ([]EmailTemplate, error) {
+	rows, err := q.db.Query(ctx, listTemplates, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EmailTemplate
+	for rows.Next() {
+		var i EmailTemplate
+		if err := rows.Scan(
+			&i.TenantID,
+			&i.ID,
+			&i.Name,
+			&i.Subject,
+			&i.Body,
+			&i.Revision,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lockWorkspace = `-- name: LockWorkspace :one
@@ -418,7 +603,7 @@ func (q *Queries) PostRules(ctx context.Context, arg PostRulesParams) ([]PostRul
 }
 
 const registerAccount = `-- name: RegisterAccount :execrows
-INSERT INTO connected_accounts (id, tenant_id, platform) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING
+INSERT INTO connected_accounts (id, tenant_id, platform,name,handle,can_send_dm) VALUES ($1, $2, $3,$3,$1,$3<>'youtube') ON CONFLICT DO NOTHING
 `
 
 type RegisterAccountParams struct {
@@ -437,7 +622,7 @@ func (q *Queries) RegisterAccount(ctx context.Context, arg RegisterAccountParams
 
 const saveDraft = `-- name: SaveDraft :exec
 INSERT INTO automations (tenant_id, id, draft) VALUES ($1, $2, $3)
-ON CONFLICT (tenant_id, id) DO UPDATE SET draft = EXCLUDED.draft
+ON CONFLICT (tenant_id, id) DO UPDATE SET draft = EXCLUDED.draft, draft_version=automations.draft_version+1, updated_at=clock_timestamp()
 `
 
 type SaveDraftParams struct {
@@ -451,8 +636,56 @@ func (q *Queries) SaveDraft(ctx context.Context, arg SaveDraftParams) error {
 	return err
 }
 
+const savePost = `-- name: SavePost :exec
+INSERT INTO social_posts(tenant_id,account_id,id,title,published_at) VALUES($1,$2,$3,$4,$5)
+ON CONFLICT(account_id,id) DO UPDATE SET title=EXCLUDED.title,published_at=EXCLUDED.published_at
+`
+
+type SavePostParams struct {
+	TenantID    string
+	AccountID   string
+	ID          string
+	Title       string
+	PublishedAt pgtype.Timestamptz
+}
+
+func (q *Queries) SavePost(ctx context.Context, arg SavePostParams) error {
+	_, err := q.db.Exec(ctx, savePost,
+		arg.TenantID,
+		arg.AccountID,
+		arg.ID,
+		arg.Title,
+		arg.PublishedAt,
+	)
+	return err
+}
+
+const saveTemplate = `-- name: SaveTemplate :exec
+INSERT INTO email_templates(tenant_id,id,name,subject,body) VALUES($1,$2,$3,$4,$5)
+ON CONFLICT(tenant_id,id) DO UPDATE SET name=EXCLUDED.name,subject=EXCLUDED.subject,body=EXCLUDED.body,revision=email_templates.revision+1
+`
+
+type SaveTemplateParams struct {
+	TenantID string
+	ID       string
+	Name     string
+	Subject  string
+	Body     string
+}
+
+func (q *Queries) SaveTemplate(ctx context.Context, arg SaveTemplateParams) error {
+	_, err := q.db.Exec(ctx, saveTemplate,
+		arg.TenantID,
+		arg.ID,
+		arg.Name,
+		arg.Subject,
+		arg.Body,
+	)
+	return err
+}
+
 const setPublished = `-- name: SetPublished :exec
-UPDATE automations SET revision = $3, enabled = true WHERE tenant_id = $1 AND id = $2
+UPDATE automations SET revision = $3, enabled = true, published_draft_version=draft_version WHERE tenant_id = $1 AND id = $2
 `
 
 type SetPublishedParams struct {
@@ -463,5 +696,28 @@ type SetPublishedParams struct {
 
 func (q *Queries) SetPublished(ctx context.Context, arg SetPublishedParams) error {
 	_, err := q.db.Exec(ctx, setPublished, arg.TenantID, arg.ID, arg.Revision)
+	return err
+}
+
+const updateAccountDetails = `-- name: UpdateAccountDetails :exec
+UPDATE connected_accounts SET name=$3,handle=$4,can_send_dm=$5 WHERE tenant_id=$1 AND id=$2
+`
+
+type UpdateAccountDetailsParams struct {
+	TenantID  string
+	ID        string
+	Name      string
+	Handle    string
+	CanSendDm bool
+}
+
+func (q *Queries) UpdateAccountDetails(ctx context.Context, arg UpdateAccountDetailsParams) error {
+	_, err := q.db.Exec(ctx, updateAccountDetails,
+		arg.TenantID,
+		arg.ID,
+		arg.Name,
+		arg.Handle,
+		arg.CanSendDm,
+	)
 	return err
 }

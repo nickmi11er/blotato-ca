@@ -30,9 +30,7 @@ export function RepeatBehavior({
           Only when they have no active conversation
         </option>
         <option value="once">Once per person for this automation</option>
-        <option value="every" disabled={waitsForReply}>
-          On every matching comment
-        </option>
+        <option value="every">On every matching comment</option>
       </select>
       {waitsForReply && (
         <p className="helper">

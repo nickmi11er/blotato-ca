@@ -19,20 +19,30 @@ type Querier interface {
 	BoundAccounts(ctx context.Context, arg BoundAccountsParams) ([]string, error)
 	ClearBindings(ctx context.Context, arg ClearBindingsParams) error
 	CountAutomations(ctx context.Context, tenantID string) (int64, error)
+	CountTemplates(ctx context.Context, tenantID string) (int64, error)
 	DeleteAutomation(ctx context.Context, arg DeleteAutomationParams) error
 	DeleteRuleChanges(ctx context.Context, dollar_1 []int64) error
+	DeleteTemplate(ctx context.Context, arg DeleteTemplateParams) error
 	DisableAutomation(ctx context.Context, arg DisableAutomationParams) error
 	EnsureWorkspace(ctx context.Context, id string) error
 	Generations(ctx context.Context, dollar_1 []string) ([]GenerationsRow, error)
 	GetAccount(ctx context.Context, id string) (ConnectedAccount, error)
 	GetAutomation(ctx context.Context, arg GetAutomationParams) (Automation, error)
+	GetTemplate(ctx context.Context, arg GetTemplateParams) (EmailTemplate, error)
+	ListAccounts(ctx context.Context, tenantID string) ([]ConnectedAccount, error)
+	ListAutomations(ctx context.Context, tenantID string) ([]Automation, error)
+	ListPosts(ctx context.Context, tenantID string) ([]SocialPost, error)
+	ListTemplates(ctx context.Context, tenantID string) ([]EmailTemplate, error)
 	LockWorkspace(ctx context.Context, id string) (string, error)
 	NextRevision(ctx context.Context, arg NextRevisionParams) (int64, error)
 	PendingRuleChanges(ctx context.Context) ([]PendingRuleChangesRow, error)
 	PostRules(ctx context.Context, arg PostRulesParams) ([]PostRulesRow, error)
 	RegisterAccount(ctx context.Context, arg RegisterAccountParams) (int64, error)
 	SaveDraft(ctx context.Context, arg SaveDraftParams) error
+	SavePost(ctx context.Context, arg SavePostParams) error
+	SaveTemplate(ctx context.Context, arg SaveTemplateParams) error
 	SetPublished(ctx context.Context, arg SetPublishedParams) error
+	UpdateAccountDetails(ctx context.Context, arg UpdateAccountDetailsParams) error
 }
 
 var _ Querier = (*Queries)(nil)

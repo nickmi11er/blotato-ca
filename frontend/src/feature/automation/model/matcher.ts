@@ -31,7 +31,10 @@ export function evaluateTrigger(draft: Draft, event: TestComment): MatchResult {
   const no = (reason: string): MatchResult => ({ matched: false, reason });
   if (!draft.accountIds.includes(event.accountId))
     return no("This account isn’t included in your trigger.");
-  if (draft.postScope === "selected" && !draft.postIds.includes(event.postId))
+  if (
+    (draft.scopeModes?.[event.accountId] ?? draft.postScope) === "selected" &&
+    !draft.postIds.includes(event.postId)
+  )
     return no("This post isn’t included in your trigger.");
   if (event.isOwn) return no("Your own comments are always skipped.");
   if (event.activeConversation && draft.reentry === "skip_active")

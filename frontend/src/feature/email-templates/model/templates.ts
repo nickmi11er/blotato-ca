@@ -1,5 +1,6 @@
 export interface EmailTemplate {
   id: string;
+  revision?: number;
   name: string;
   subject: string;
   body: string;

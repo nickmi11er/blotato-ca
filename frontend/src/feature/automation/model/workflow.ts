@@ -3,6 +3,7 @@ export type Action =
   | { id: string; kind: "reply" | "dm"; text: string }
   | { id: string; kind: "email"; templateId: string };
 export interface ReplyWait {
+  prompt_node_id?: string;
   id: string;
   kind: "wait_reply";
   expected: "email" | "text";
@@ -272,6 +273,9 @@ export function decodeWorkflow(value: unknown): Step[] | null {
       return {
         id,
         kind: v.kind,
+        ...(typeof v.prompt_node_id === "string"
+          ? { prompt_node_id: v.prompt_node_id }
+          : {}),
         expected: v.expected,
         timeoutHours: v.timeoutHours,
         invalidBehavior: v.invalidBehavior,

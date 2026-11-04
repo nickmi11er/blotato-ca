@@ -1,6 +1,6 @@
 # 003. Session execution and DM routing
 
-> **Implemented:** durable session execution, asynchronous delivery, reply waits, timers, and partition-scoped DM caching. Local configuration records sends in PostgreSQL; real sends use the HTTP integration contract below. The frontend remains a standalone prototype.
+> **Implemented:** durable session execution, asynchronous delivery, reply waits, timers, and partition-scoped DM caching. Local configuration records sends in PostgreSQL; real sends use the HTTP integration contract below. The React editor is connected to the backend API.
 
 [Architecture index](README.md) · [Trigger matching](002-trigger-matching-and-cache.md) · [Inbound events](001-inbound-comment-events.md)
 
@@ -162,3 +162,9 @@ The adapter POSTs JSON with `idempotency_key`, `kind` (`reply`, `dm`, `email`), 
 The internal bearer-protected API exposes `GET /v1/workspaces/{tenant}/sessions/{id}` (state, steps, jobs, history), `POST …/cancel`, and `POST …/resolve-delivery`. Resolution accepts `job_id`, `status` (`succeeded` or `failed`), optional `reason`, and a required `provider_message_id` for success. Resolve only after checking the integration's outcome; the update and resumed transition commit together.
 
 Integration tests cover early replies, invalid answers, reply/timeout ordering, worker restart, concurrent workers, stale leases, unknown outcomes, cancellation, conversation contention, and activation after a two-consumer Kafka rebalance. See the [runnable example](../local-development.md).
+
+## Editor integration
+
+The editor uses a same-origin workspace proxy; the internal API token stays server-side. `GET …/automations`, `GET …/catalog`, and template CRUD supply persisted workspace data. Catalog metadata is populated by the existing social integration, not inferred from comment traffic.
+
+Drafts may be incomplete. Publication validates them and creates an immutable executable version. Draft `If-Match` preconditions and template revisions reject stale writes across tabs/replicas; the existing workspace lock serializes mutations and limits. Publication resolves current template records under that lock and pins their contents before committing. Saving a draft or changing a template cannot alter a running session. Pausing or deleting a flow stops new admission and preserves existing sessions.

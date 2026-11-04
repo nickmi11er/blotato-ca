@@ -39,12 +39,16 @@ export function AutomationBuilder({
   templates,
   setModal,
   save,
+  publish,
+  disable,
 }: {
   controller: AutomationDraftController;
   catalog: ScopeCatalog;
   templates: readonly EmailTemplate[];
   setModal: (modal: EditorModal) => void;
   save: () => void;
+  publish: () => void;
+  disable: () => void;
 }) {
   const { draft, update, toggleAccount, dirty, savedAt, errors } = controller;
   const [selected, setSelected] = useState("trigger");
@@ -178,14 +182,24 @@ export function AutomationBuilder({
               <Icon name="edit" />
             </button>
           </h1>
-          <span className="draft-badge">Draft</span>
+          <span
+            className={`draft-badge ${controller.enabled ? "is-live" : ""}`}
+          >
+            {controller.enabled
+              ? "Published"
+              : controller.revision
+                ? "Paused"
+                : "Draft"}
+          </span>
         </div>
         <div className="toolbar-actions">
           <span className="save-status">
             {dirty
               ? "Unsaved changes"
               : savedAt
-                ? "Saved on this device"
+                ? controller.enabled && controller.unpublished
+                  ? "Unpublished changes"
+                  : "Saved"
                 : "Not saved yet"}
           </span>
           <button
@@ -199,8 +213,34 @@ export function AutomationBuilder({
             <Icon name={testing ? "close" : "play"} />{" "}
             {testing ? "Exit test" : "Test flow"}
           </button>
-          <button className="button button-primary" onClick={save}>
-            <Icon name="save" /> Save draft
+          <button
+            className="button button-secondary"
+            onClick={save}
+            disabled={controller.busy}
+          >
+            <Icon name="save" /> {controller.busy ? "Saving…" : "Save draft"}
+          </button>
+          {controller.enabled && (
+            <button
+              className="button button-secondary"
+              disabled={controller.busy}
+              onClick={disable}
+            >
+              Pause
+            </button>
+          )}
+          <button
+            className="button button-primary"
+            disabled={controller.busy || errors.length > 0}
+            onClick={publish}
+            title={
+              errors.length
+                ? "Finish configuring your flow before publishing"
+                : undefined
+            }
+          >
+            <Icon name="play" />{" "}
+            {controller.enabled ? "Publish changes" : "Publish"}
           </button>
         </div>
       </div>
@@ -284,6 +324,7 @@ export function AutomationBuilder({
                     step={active}
                     change={change}
                     templates={templates}
+                    steps={draft.steps}
                     outcome={outcome}
                     onOutcome={setOutcome}
                     depth={location?.depth ?? 0}
@@ -349,9 +390,11 @@ export function AutomationBuilder({
               <div className="wf-local-note">
                 <Icon name="save" />
                 <span>
-                  Draft only. Saved in this browser.
+                  {controller.enabled
+                    ? "New matching comments start the published flow."
+                    : "Publish when you’re ready to start accepting comments."}
                   <br />
-                  Publishing and delivery aren’t connected yet.
+                  Saved edits take effect after publishing.
                 </span>
               </div>
             </>
@@ -371,7 +414,7 @@ export function AutomationBuilder({
           <span>
             <Icon name="info" />
             {errors.length} {errors.length === 1 ? "item" : "items"} to
-            configure before testing. You can save now.
+            configure before publishing. You can save now.
           </span>
           <button
             className="text-button"

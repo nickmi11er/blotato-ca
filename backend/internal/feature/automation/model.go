@@ -61,7 +61,9 @@ func ValidID(s string) bool {
 	return len(s) > 0 && len(s) <= 200 && utf8.ValidString(s) && strings.TrimSpace(s) == s && !strings.ContainsAny(s, "\x00\r\n")
 }
 
-func (d Document) Validate() error {
+func (d Document) Validate() error      { return d.validate(false) }
+func (d Document) ValidateDraft() error { return d.validate(true) }
+func (d Document) validate(draft bool) error {
 	if strings.TrimSpace(d.Name) == "" || len(d.Name) > 200 {
 		return errors.New("name must contain 1–200 bytes")
 	}
@@ -76,7 +78,7 @@ func (d Document) Validate() error {
 	if t.SchemaVersion != 1 {
 		return errors.New("unsupported trigger schema_version")
 	}
-	if len(t.Scopes) == 0 || len(t.Scopes) > 20 {
+	if (!draft && len(t.Scopes) == 0) || len(t.Scopes) > 20 {
 		return errors.New("select 1–20 accounts")
 	}
 	accounts := map[string]bool{}
@@ -92,7 +94,7 @@ func (d Document) Validate() error {
 				return errors.New("all-post scope cannot contain selected posts")
 			}
 		case "selected":
-			if len(scope.Posts.IDs) == 0 {
+			if !draft && len(scope.Posts.IDs) == 0 {
 				return errors.New("selected scope requires posts")
 			}
 			posts := map[string]bool{}
@@ -113,10 +115,11 @@ func (d Document) Validate() error {
 	if t.Repeat.Mode != "every" && t.Repeat.Mode != "once" && t.Repeat.Mode != "skip_active" {
 		return errors.New("invalid repeat mode")
 	}
-	return t.Comment.Validate()
+	return t.Comment.validate(draft)
 }
 
-func (p Predicate) Validate() error {
+func (p Predicate) Validate() error { return p.validate(false) }
+func (p Predicate) validate(draft bool) error {
 	if p.Mode != "any" && p.Mode != "keywords" {
 		return errors.New("invalid comment mode")
 	}
@@ -126,7 +129,7 @@ func (p Predicate) Validate() error {
 	if p.Logic != "any" && p.Logic != "all" {
 		return errors.New("invalid keyword logic")
 	}
-	if p.Mode == "keywords" && len(p.Keywords) == 0 {
+	if !draft && p.Mode == "keywords" && len(p.Keywords) == 0 {
 		return errors.New("keywords are required")
 	}
 	for name, terms := range map[string][]string{"keywords": p.Keywords, "exclusions": p.Exclusions} {

@@ -2,6 +2,12 @@ services:
   frontend:
     build:
       context: ./frontend
+    environment:
+      AUTOMATION_WORKSPACE_ID: northstar
+      AUTOMATION_API_TOKEN: local-development-internal-token
+    depends_on:
+      demo-init:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:3000:80"
     healthcheck:
@@ -24,6 +30,20 @@ services:
       kafka-init:
         condition: service_completed_successfully
     stop_grace_period: 15s
+
+  demo-init:
+    image: postgres:17-alpine
+    environment:
+      PGHOST: postgres
+      PGUSER: automation
+      PGPASSWORD: local
+      PGDATABASE: automation
+    volumes:
+      - ./backend/scripts:/seed:ro
+    depends_on:
+      backend:
+        condition: service_started
+    entrypoint: ["/bin/sh", "/seed/seed-demo.sh"]
 
   postgres:
     image: postgres:17-alpine

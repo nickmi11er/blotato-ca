@@ -56,7 +56,7 @@ export function AppLayout({
         <footer className="page-footer">
           <span>Made for meaningful connections.</span>
           <span>
-            Design preview <span>·</span> Drafts stay in this browser
+            Connected workspace <span>·</span> Saved to your account
           </span>
         </footer>
       </div>

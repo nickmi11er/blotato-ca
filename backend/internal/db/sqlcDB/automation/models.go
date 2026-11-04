@@ -4,16 +4,43 @@
 
 package automationDB
 
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
 type Automation struct {
-	TenantID string
-	ID       string
-	Draft    []byte
-	Enabled  bool
-	Revision int64
+	TenantID              string
+	ID                    string
+	Draft                 []byte
+	Enabled               bool
+	Revision              int64
+	DraftVersion          int64
+	PublishedDraftVersion int64
+	UpdatedAt             pgtype.Timestamptz
 }
 
 type ConnectedAccount struct {
-	ID       string
+	ID        string
+	TenantID  string
+	Platform  string
+	Name      string
+	Handle    string
+	CanSendDm bool
+}
+
+type EmailTemplate struct {
 	TenantID string
-	Platform string
+	ID       string
+	Name     string
+	Subject  string
+	Body     string
+	Revision int64
+}
+
+type SocialPost struct {
+	TenantID    string
+	AccountID   string
+	ID          string
+	Title       string
+	PublishedAt pgtype.Timestamptz
 }

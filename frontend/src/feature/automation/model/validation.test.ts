@@ -27,19 +27,20 @@ test("validates restored messages and stale or mismatched scope references", () 
     {
       ...defaultDraft,
       postScope: "selected",
+      accountIds: ["instagram"],
       postIds: ["deleted-post"],
       steps: [{ id: "test-dm", kind: "dm", text: " " }],
     },
     defaultDraft,
   );
-  expect(validateDraft(draft, catalog)).toHaveLength(2);
+  expect(validateDraft(draft, catalog)).toHaveLength(3);
   draft.postIds = ["yt_1"];
-  expect(validateDraft(draft, catalog)).toHaveLength(2);
+  expect(validateDraft(draft, catalog)).toHaveLength(3);
   draft.postIds = ["ig_1"];
   draft.steps = [{ id: "test-dm", kind: "dm", text: "Email?" }];
   expect(validateDraft(draft, catalog)).toEqual([]);
   draft.accountIds = ["deleted-account"];
-  expect(validateDraft(draft, catalog)).toHaveLength(2);
+  expect(validateDraft(draft, catalog)).toHaveLength(3);
 });
 
 test("accepts independent identities for multiple accounts on the same platform", () => {

@@ -4,11 +4,12 @@ import {
   renderTemplate,
   type EmailTemplate,
 } from "../../email-templates/model/templates";
-import { formatSchedule, type Step } from "../model/workflow";
+import { formatSchedule, allActions, type Step } from "../model/workflow";
 import { localDateValue, localDateToInstant } from "../model/schedule";
 import type { Outcome } from "./FlowCanvas";
 export function StepSettings({
   step,
+  steps,
   change,
   templates,
   outcome,
@@ -17,6 +18,7 @@ export function StepSettings({
   onAddTimeout,
 }: {
   step: Step;
+  steps: Step[];
   change: (step: Step) => void;
   templates: readonly EmailTemplate[];
   outcome: Outcome;
@@ -125,10 +127,27 @@ export function StepSettings({
   if (step.kind === "schedule")
     return <ScheduleSettings step={step} change={change} />;
   if (step.kind !== "wait_reply") return null;
+  const prompts = allActions(steps).filter((s) => s.kind === "dm");
   const current =
     step.expected === "text" && outcome === "invalid" ? "success" : outcome;
   return (
     <div className="wf-fields">
+      <label>
+        Question to listen for
+        <select
+          value={step.prompt_node_id ?? ""}
+          onChange={(e) =>
+            change({ ...step, prompt_node_id: e.target.value || undefined })
+          }
+        >
+          <option value="">Automatically use the preceding DM</option>
+          {prompts.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.kind === "dm" ? p.text.slice(0, 70) || "Untitled DM" : p.id}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="wf-tip amber">
         <Icon name="clock" />
         <p>

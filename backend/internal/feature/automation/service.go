@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	db "blotato-comment-automation/internal/db/sqlcDB/automation"
 	"blotato-comment-automation/internal/feature/workflow"
@@ -21,10 +22,13 @@ type Service struct{ pool *pgxpool.Pool }
 func NewService(pool *pgxpool.Pool) *Service { return &Service{pool: pool} }
 
 type View struct {
-	ID       string   `json:"id"`
-	Enabled  bool     `json:"enabled"`
-	Revision int64    `json:"revision"`
-	Draft    Document `json:"draft"`
+	ID                    string    `json:"id"`
+	Enabled               bool      `json:"enabled"`
+	Revision              int64     `json:"revision"`
+	Draft                 Document  `json:"draft"`
+	DraftVersion          int64     `json:"draft_version"`
+	PublishedDraftVersion int64     `json:"published_draft_version"`
+	UpdatedAt             time.Time `json:"updated_at"`
 }
 
 func (s *Service) Get(ctx context.Context, tenant, id string) (View, error) {
@@ -35,7 +39,7 @@ func (s *Service) Get(ctx context.Context, tenant, id string) (View, error) {
 	if err != nil {
 		return View{}, err
 	}
-	v := View{ID: row.ID, Enabled: row.Enabled, Revision: row.Revision}
+	v := View{ID: row.ID, Enabled: row.Enabled, Revision: row.Revision, DraftVersion: row.DraftVersion, PublishedDraftVersion: row.PublishedDraftVersion, UpdatedAt: row.UpdatedAt.Time}
 	err = json.Unmarshal(row.Draft, &v.Draft)
 	return v, err
 }
@@ -101,15 +105,21 @@ func checkAccounts(ctx context.Context, q *db.Queries, tenant string, d Document
 	return nil
 }
 func (s *Service) Save(ctx context.Context, tenant, id string, d Document) error {
+	return s.SaveVersion(ctx, tenant, id, d, nil)
+}
+func (s *Service) SaveVersion(ctx context.Context, tenant, id string, d Document, expected *int64) error {
 	if !ValidID(id) {
 		return ErrInvalid
 	}
-	if err := d.Validate(); err != nil {
+	if err := d.ValidateDraft(); err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
 	return s.transaction(ctx, tenant, func(q *db.Queries) error {
-		_, err := q.GetAutomation(ctx, db.GetAutomationParams{TenantID: tenant, ID: id})
+		current, err := q.GetAutomation(ctx, db.GetAutomationParams{TenantID: tenant, ID: id})
 		if errors.Is(err, pgx.ErrNoRows) {
+			if expected != nil && *expected != 0 {
+				return ErrConflict
+			}
 			count, e := q.CountAutomations(ctx, tenant)
 			if e != nil {
 				return e
@@ -119,6 +129,8 @@ func (s *Service) Save(ctx context.Context, tenant, id string, d Document) error
 			}
 		} else if err != nil {
 			return err
+		} else if expected != nil && current.DraftVersion != *expected {
+			return ErrConflict
 		}
 		if err = checkAccounts(ctx, q, tenant, d); err != nil {
 			return err
@@ -131,15 +143,15 @@ func (s *Service) Save(ctx context.Context, tenant, id string, d Document) error
 	})
 }
 func (s *Service) Publish(ctx context.Context, tenant, id string) error {
-	return s.mutate(ctx, tenant, id, "publish")
+	return s.mutate(ctx, tenant, id, "publish", nil)
 }
 func (s *Service) Disable(ctx context.Context, tenant, id string) error {
-	return s.mutate(ctx, tenant, id, "disable")
+	return s.mutate(ctx, tenant, id, "disable", nil)
 }
 func (s *Service) Delete(ctx context.Context, tenant, id string) error {
-	return s.mutate(ctx, tenant, id, "delete")
+	return s.mutate(ctx, tenant, id, "delete", nil)
 }
-func (s *Service) mutate(ctx context.Context, tenant, id, action string) error {
+func (s *Service) mutate(ctx context.Context, tenant, id, action string, expected *int64) error {
 	if !ValidID(id) {
 		return ErrInvalid
 	}
@@ -150,6 +162,9 @@ func (s *Service) mutate(ctx context.Context, tenant, id, action string) error {
 		}
 		if err != nil {
 			return err
+		}
+		if expected != nil && a.DraftVersion != *expected {
+			return ErrConflict
 		}
 		affected, err := q.BoundAccounts(ctx, db.BoundAccountsParams{TenantID: tenant, AutomationID: id})
 		if err != nil {
@@ -165,14 +180,30 @@ func (s *Service) mutate(ctx context.Context, tenant, id, action string) error {
 				return err
 			}
 			if err = d.Validate(); err != nil {
-				return err
+				return fmt.Errorf("%w: %v", ErrInvalid, err)
 			}
 			if err = checkAccounts(ctx, q, tenant, d); err != nil {
+				return err
+			}
+			if err = pinTemplates(ctx, q, tenant, &d); err != nil {
 				return err
 			}
 			plan, err := workflow.Compile(d.Workflow)
 			if err != nil {
 				return fmt.Errorf("%w: %v", ErrInvalid, err)
+			}
+			for _, scope := range d.Trigger.Scopes {
+				account, err := q.GetAccount(ctx, scope.AccountID)
+				if err != nil {
+					return err
+				}
+				if !account.CanSendDm && needsDM(plan) {
+					return fmt.Errorf("%w: account does not support direct messages", ErrInvalid)
+				}
+			}
+			publishedDocument, err := json.Marshal(d)
+			if err != nil {
+				return err
 			}
 			compiled, err := json.Marshal(plan)
 			if err != nil {
@@ -182,7 +213,7 @@ func (s *Service) mutate(ctx context.Context, tenant, id, action string) error {
 			if err != nil {
 				return err
 			}
-			if err = q.AddVersion(ctx, db.AddVersionParams{TenantID: tenant, AutomationID: id, Revision: int64(revision), Document: a.Draft, ExecutionPlan: compiled}); err != nil {
+			if err = q.AddVersion(ctx, db.AddVersionParams{TenantID: tenant, AutomationID: id, Revision: int64(revision), Document: publishedDocument, ExecutionPlan: compiled}); err != nil {
 				return err
 			}
 			if err = q.SetPublished(ctx, db.SetPublishedParams{TenantID: tenant, ID: id, Revision: int64(revision)}); err != nil {

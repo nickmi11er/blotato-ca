@@ -2,7 +2,7 @@
 
 See the [architecture index](architecture/README.md) for the inbound contract, trigger matching/cache, and session execution design. The commands below describe the currently implemented services.
 
-The trigger-builder frontend is in `frontend`. The React prototype uses demo data and browser-local draft storage; it can be explored independently of the backend. See [frontend setup](../frontend/README.md).
+The trigger-builder frontend is in `frontend`. The React app loads its workspace from the backend and persists automations and email templates in PostgreSQL. See [frontend setup](../frontend/README.md).
 
 From the repository root, build and start the frontend and backend with PostgreSQL and Kafka:
 
@@ -11,7 +11,7 @@ docker compose up -d --build --wait
 docker compose logs -f backend
 ```
 
-Open the frontend at `http://localhost:3000`. To start only the frontend, use `docker compose up -d --build --wait frontend`.
+Open the frontend at `http://localhost:3000`. The frontend proxies editor requests to the backend for the fixed local workspace `northstar`. Both services are required. After backend migrations, `demo-init` inserts three email templates, a configured “Pricing → email capture” draft, and sample account/post metadata before the frontend starts. The automation is initially unpublished. A database marker makes initialization run once, preserving edits and deletions on subsequent starts. Fixtures live in `backend/scripts/seed-demo.sql`, outside application migrations.
 
 For frontend development with hot reload, run `cd frontend`, `npm ci`, then `npm run dev` in a separate shell. Vite prints its local URL, normally `http://127.0.0.1:5173`.
 
@@ -33,12 +33,12 @@ The backend applies embedded Goose migrations at startup. It matches comments ag
 
 ## Publish a trigger
 
-The internal API listens on `127.0.0.1:8080`. The checked-in bearer token is for local development; a trusted gateway/integration holds this credential. The frontend still uses browser-local storage. Publication validates and compiles the workflow. Email templates are embedded snapshots for now; template CRUD and frontend API integration are separate work.
+The internal API listens on `127.0.0.1:8080`. The checked-in bearer token is for local development; a trusted gateway/integration holds this credential. The frontend uses a server-side proxy, so the internal credential stays out of the browser. Publication validates and compiles the workflow. Email templates can be managed through the UI or `/templates`; publication pins their current contents. Explicit inline snapshots remain supported for existing API clients.
 
 Register the account, save a draft, and publish it before sending a comment:
 
 ```sh
-api=http://127.0.0.1:8080/v1/workspaces/demo
+api=http://127.0.0.1:8080/v1/workspaces/northstar
 auth='Authorization: Bearer local-development-internal-token'
 curl --fail-with-body -X PUT "$api/accounts/acc_42" -H "$auth" -H 'Content-Type: application/json' -d '{"platform":"instagram"}'
 curl --fail-with-body -X PUT "$api/automations/pricing" -H "$auth" -H 'Content-Type: application/json' --data-binary @- <<'JSON'
@@ -99,7 +99,7 @@ docker compose exec -T postgres psql -U automation -c 'TABLE recorded_deliveries
 
 After the workers process the reply, the session becomes `completed` and the rendered email appears in `recorded_deliveries`. Add a `delay` step with `minutes: 60` before `send` to defer it for an hour. A process restart preserves the timer.
 
-Inspect one session with `GET /v1/workspaces/demo/sessions/{id}`, using the same bearer token. State, steps, jobs, and transition history are returned together. Cancellation, unknown-outcome resolution, and real HTTP delivery configuration are described in [session execution](architecture/003-session-execution-and-dm-routing.md#delivery-boundary-and-operations).
+Inspect one session with `GET /v1/workspaces/northstar/sessions/{id}`, using the same bearer token. State, steps, jobs, and transition history are returned together. Cancellation, unknown-outcome resolution, and real HTTP delivery configuration are described in [session execution](architecture/003-session-execution-and-dm-routing.md#delivery-boundary-and-operations).
 
 Stop the Go process with Ctrl+C, or use `docker compose stop backend`. Compose allows 15 seconds for shutdown.
 

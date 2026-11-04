@@ -10,7 +10,9 @@ function getPage() {
     ? "templates"
     : window.location.hash === "#automations"
       ? "automations"
-      : "builder";
+      : window.location.hash === "#builder"
+        ? "builder"
+        : "automations";
 }
 
 export function useAutomationPage() {

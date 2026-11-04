@@ -119,41 +119,74 @@ export function TriggerScope({
             </button>
           </p>
         ))}
+      {draft.scopeModes && (
+        <div className="wf-fields">
+          <p className="helper">
+            This flow uses a different post scope for each account.
+          </p>
+          {draft.accountIds.map((id) => (
+            <label key={id}>
+              Posts for {catalog.accounts.find((a) => a.id === id)?.name ?? id}
+              <select
+                value={draft.scopeModes?.[id] ?? draft.postScope}
+                onChange={(e) =>
+                  update({
+                    scopeModes: {
+                      ...draft.scopeModes,
+                      [id]: e.target.value as "all" | "selected",
+                    },
+                  })
+                }
+              >
+                <option value="all">All posts</option>
+                <option value="selected">Selected posts</option>
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
       {draft.postScope === "selected" ? (
         <div className="post-grid">
           {visiblePosts.length ? (
-            visiblePosts.map((post) => (
-              <label
-                className={`post-card ${draft.postIds.includes(post.id) ? "selected" : ""}`}
-                key={post.id}
-              >
-                <input
-                  className="sr-only"
-                  type="checkbox"
-                  checked={draft.postIds.includes(post.id)}
-                  onChange={() =>
-                    update({
-                      postIds: draft.postIds.includes(post.id)
-                        ? draft.postIds.filter((id) => id !== post.id)
-                        : [...draft.postIds, post.id],
-                    })
-                  }
-                  aria-label={`Select post: ${post.title}`}
-                />
-                <span className={`post-cover ${post.cover}`}>
-                  <span>{post.copy}</span>
-                  <span className="post-check">
-                    <Icon name="check" />
+            visiblePosts
+              .filter(
+                (post) =>
+                  !draft.scopeModes ||
+                  (draft.scopeModes[post.accountId] ?? draft.postScope) ===
+                    "selected",
+              )
+              .map((post) => (
+                <label
+                  className={`post-card ${draft.postIds.includes(post.id) ? "selected" : ""}`}
+                  key={post.id}
+                >
+                  <input
+                    className="sr-only"
+                    type="checkbox"
+                    checked={draft.postIds.includes(post.id)}
+                    onChange={() =>
+                      update({
+                        postIds: draft.postIds.includes(post.id)
+                          ? draft.postIds.filter((id) => id !== post.id)
+                          : [...draft.postIds, post.id],
+                      })
+                    }
+                    aria-label={`Select post: ${post.title}`}
+                  />
+                  <span className={`post-cover ${post.cover}`}>
+                    <span>{post.copy}</span>
+                    <span className="post-check">
+                      <Icon name="check" />
+                    </span>
                   </span>
-                </span>
-                <span className="post-caption">{post.title}</span>
-                <span className="post-date">
-                  {post.date} · {post.comments} comments
-                </span>
-              </label>
-            ))
+                  <span className="post-caption">{post.title}</span>
+                  <span className="post-date">{post.date}</span>
+                </label>
+              ))
           ) : (
-            <p className="helper">Select an account to see its demo posts.</p>
+            <p className="helper">
+              No posts available for the selected accounts.
+            </p>
           )}
         </div>
       ) : (
@@ -166,10 +199,10 @@ export function TriggerScope({
         <div className="capability-note" role="status">
           <Icon name="info" />
           <p>
-            DM steps are unavailable for this demo account:{" "}
+            DM steps are unavailable for:{" "}
             {dmUnavailable.map((account) => account.name).join(", ")}. You can
-            configure its comment trigger; the email capture preview needs a
-            compatible account.
+            configure its comment trigger; email capture needs a compatible
+            account.
           </p>
         </div>
       )}

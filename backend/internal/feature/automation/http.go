@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,8 @@ func NewHTTPHandler(service *Service, token string, extensions ...func(*http.Ser
 	respond := func(w http.ResponseWriter, r *http.Request, err error) {
 		status := http.StatusInternalServerError
 		switch {
+		case errors.Is(err, ErrConflict):
+			status = http.StatusConflict
 		case errors.Is(err, ErrNotFound):
 			status = http.StatusNotFound
 		case errors.Is(err, ErrInvalid):
@@ -47,9 +50,88 @@ func NewHTTPHandler(service *Service, token string, extensions ...func(*http.Ser
 		}
 		return true
 	}
+	expected := func(w http.ResponseWriter, r *http.Request) (*int64, bool) {
+		raw := r.Header.Get("If-Match")
+		if raw == "" {
+			return nil, true
+		}
+		v, err := strconv.ParseInt(strings.Trim(raw, "\""), 10, 64)
+		if err != nil || v < 0 {
+			http.Error(w, "invalid If-Match", 400)
+			return nil, false
+		}
+		return &v, true
+	}
+	writeJSON := func(w http.ResponseWriter, v any) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(v)
+	}
+	mux.HandleFunc("GET /v1/workspaces/{tenant}/automations", func(w http.ResponseWriter, r *http.Request) {
+		v, err := service.List(r.Context(), r.PathValue("tenant"))
+		if err != nil {
+			respond(w, r, err)
+			return
+		}
+		writeJSON(w, v)
+	})
+	mux.HandleFunc("GET /v1/workspaces/{tenant}/catalog", func(w http.ResponseWriter, r *http.Request) {
+		v, err := service.Catalog(r.Context(), r.PathValue("tenant"))
+		if err != nil {
+			respond(w, r, err)
+			return
+		}
+		writeJSON(w, v)
+	})
+	mux.HandleFunc("GET /v1/workspaces/{tenant}/templates", func(w http.ResponseWriter, r *http.Request) {
+		v, err := service.Templates(r.Context(), r.PathValue("tenant"))
+		if err != nil {
+			respond(w, r, err)
+			return
+		}
+		writeJSON(w, v)
+	})
+	mux.HandleFunc("PUT /v1/workspaces/{tenant}/templates/{id}", func(w http.ResponseWriter, r *http.Request) {
+		var t EmailTemplate
+		if !decode(w, r, &t) {
+			return
+		}
+		t.ID = r.PathValue("id")
+		if err := service.SaveTemplate(r.Context(), r.PathValue("tenant"), t); err != nil {
+			respond(w, r, err)
+			return
+		}
+		w.WriteHeader(204)
+	})
+	mux.HandleFunc("DELETE /v1/workspaces/{tenant}/templates/{id}", func(w http.ResponseWriter, r *http.Request) {
+		version, ok := expected(w, r)
+		if !ok {
+			return
+		}
+		if err := service.DeleteTemplate(r.Context(), r.PathValue("tenant"), r.PathValue("id"), version); err != nil {
+			respond(w, r, err)
+			return
+		}
+		w.WriteHeader(204)
+	})
+	mux.HandleFunc("PUT /v1/workspaces/{tenant}/accounts/{account}/posts/{id}", func(w http.ResponseWriter, r *http.Request) {
+		var p PostView
+		if !decode(w, r, &p) {
+			return
+		}
+		p.ID = r.PathValue("id")
+		p.AccountID = r.PathValue("account")
+		if err := service.SavePost(r.Context(), r.PathValue("tenant"), p); err != nil {
+			respond(w, r, err)
+			return
+		}
+		w.WriteHeader(204)
+	})
 	mux.HandleFunc("PUT /v1/workspaces/{tenant}/accounts/{id}", func(w http.ResponseWriter, r *http.Request) {
 		var body struct {
-			Platform string `json:"platform"`
+			Platform  string  `json:"platform"`
+			Name      *string `json:"name"`
+			Handle    *string `json:"handle"`
+			CanSendDM *bool   `json:"canSendDM"`
 		}
 		if !decode(w, r, &body) {
 			return
@@ -57,6 +139,22 @@ func NewHTTPHandler(service *Service, token string, extensions ...func(*http.Ser
 		if err := service.RegisterAccount(r.Context(), r.PathValue("tenant"), r.PathValue("id"), body.Platform); err != nil {
 			respond(w, r, err)
 			return
+		}
+		if body.Name != nil || body.Handle != nil || body.CanSendDM != nil {
+			a := AccountView{ID: r.PathValue("id"), Platform: body.Platform, Name: body.Platform, Handle: r.PathValue("id"), CanSendDM: body.Platform != "youtube"}
+			if body.Name != nil {
+				a.Name = *body.Name
+			}
+			if body.Handle != nil {
+				a.Handle = *body.Handle
+			}
+			if body.CanSendDM != nil {
+				a.CanSendDM = *body.CanSendDM
+			}
+			if err := service.AccountDetails(r.Context(), r.PathValue("tenant"), a); err != nil {
+				respond(w, r, err)
+				return
+			}
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -66,7 +164,11 @@ func NewHTTPHandler(service *Service, token string, extensions ...func(*http.Ser
 		if !decode(w, r, &d) {
 			return
 		}
-		if err := service.Save(r.Context(), r.PathValue("tenant"), r.PathValue("id"), d); err != nil {
+		version, ok := expected(w, r)
+		if !ok {
+			return
+		}
+		if err := service.SaveVersion(r.Context(), r.PathValue("tenant"), r.PathValue("id"), d, version); err != nil {
 			respond(w, r, err)
 			return
 		}
@@ -83,20 +185,18 @@ func NewHTTPHandler(service *Service, token string, extensions ...func(*http.Ser
 	})
 	for _, operation := range []struct {
 		path, method string
-		action       func(*http.Request) error
+		action       string
 	}{
-		{"/publish", "POST", func(r *http.Request) error {
-			return service.Publish(r.Context(), r.PathValue("tenant"), r.PathValue("id"))
-		}},
-		{"/disable", "POST", func(r *http.Request) error {
-			return service.Disable(r.Context(), r.PathValue("tenant"), r.PathValue("id"))
-		}},
-		{"", "DELETE", func(r *http.Request) error {
-			return service.Delete(r.Context(), r.PathValue("tenant"), r.PathValue("id"))
-		}},
+		{"/publish", "POST", "publish"},
+		{"/disable", "POST", "disable"},
+		{"", "DELETE", "delete"},
 	} {
 		mux.HandleFunc(operation.method+" "+base+operation.path, func(w http.ResponseWriter, r *http.Request) {
-			if err := operation.action(r); err != nil {
+			version, ok := expected(w, r)
+			if !ok {
+				return
+			}
+			if err := service.MutateVersion(r.Context(), r.PathValue("tenant"), r.PathValue("id"), operation.action, version); err != nil {
 				respond(w, r, err)
 				return
 			}

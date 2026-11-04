@@ -5,8 +5,10 @@ export type Reentry = "skip_active" | "once" | "every";
 export interface Draft {
   schemaVersion: 2;
   name: string;
+  priority?: number;
   accountIds: string[];
   postScope: "all" | "selected";
+  scopeModes?: Record<string, "all" | "selected">;
   postIds: string[];
   matchKind: MatchKind;
   operator: MatchOperator;

@@ -106,8 +106,8 @@ export function EmailTemplates({
         </button>
       </div>
       <p className="wf-template-footnote">
-        <Icon name="info" /> Templates are stored on this device. Emails shown
-        here are previews, not deliveries.
+        <Icon name="info" /> Templates are saved to your workspace. Published
+        flows keep their own version until you publish again.
       </p>
       {editing && (
         <Modal
@@ -122,13 +122,13 @@ export function EmailTemplates({
           className="wf-template-modal"
         >
           <form
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
-              const issue = controller.save(editing);
+              const issue = await controller.save(editing);
               if (issue) setError(issue);
               else {
                 setEditing(null);
-                notify("Email template saved on this device.");
+                notify("Email template saved.");
               }
             }}
           >
@@ -173,8 +173,8 @@ export function EmailTemplates({
                 </label>
                 <p className="wf-help">
                   Plain text with links. Personalize with {"{{first_name}}"} and{" "}
-                  {"{{email}}"}. Changing a template updates all local draft
-                  steps using it.
+                  {"{{email}}"}. Changes apply to future publications; running
+                  sessions keep their original template.
                 </p>
               </div>
               <div className="wf-template-live">
@@ -211,7 +211,11 @@ export function EmailTemplates({
               >
                 Cancel
               </button>
-              <button type="submit" className="button button-primary">
+              <button
+                type="submit"
+                className="button button-primary"
+                disabled={controller.busy}
+              >
                 <Icon name="check" /> Save template
               </button>
             </div>
@@ -222,7 +226,7 @@ export function EmailTemplates({
         <Modal
           title="Delete this template?"
           eyebrow="EMAIL TEMPLATES"
-          description={`“${deleting.name}” will be removed from this browser.`}
+          description={`“${deleting.name}” will be removed from this workspace.`}
           close={() => setDeleting(null)}
         >
           <div className="wf-modal-footer">
@@ -234,11 +238,14 @@ export function EmailTemplates({
             </button>
             <button
               className="button button-primary"
-              onClick={() => {
-                const issue = controller.remove(deleting.id);
+              disabled={controller.busy}
+              onClick={async () => {
+                const issue = await controller.remove(deleting.id);
                 if (issue) notify(issue);
-                else notify("Template deleted.");
-                setDeleting(null);
+                else {
+                  notify("Template deleted.");
+                  setDeleting(null);
+                }
               }}
             >
               Delete template

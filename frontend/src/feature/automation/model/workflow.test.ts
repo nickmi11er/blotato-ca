@@ -154,13 +154,13 @@ test("an unreadable saved chain is flagged for repair, never silently replaced",
   ).toHaveLength(1);
 });
 
-test("waiting sessions require unambiguous reentry and DM-capable accounts", () => {
+test("waiting sessions allow every-comment admission but require DM-capable accounts", () => {
   const draft = {
     ...defaultDraft,
     reentry: "every" as const,
     accountIds: ["youtube"],
   };
-  expect(validateDraft(draft, { accounts, posts })).toHaveLength(2);
+  expect(validateDraft(draft, { accounts, posts })).toHaveLength(1);
   draft.steps = [{ id: "reply", kind: "reply", text: "Hello" }];
   expect(validateDraft(draft, { accounts, posts })).toEqual([]);
 });

@@ -1,6 +1,6 @@
 # 002. Trigger matching and caching
 
-> **Implemented:** rule publication, cached matching, durable session admission, and cross-replica invalidation. Admitted sessions continue through the [execution engine](003-session-execution-and-dm-routing.md). Frontend API integration remains pending.
+> **Implemented:** rule publication, cached matching, durable session admission, and cross-replica invalidation. Admitted sessions continue through the [execution engine](003-session-execution-and-dm-routing.md). The React editor saves drafts and publishes rules through the internal API via a server-side workspace proxy.
 
 [Architecture index](README.md) · [Inbound event contract](001-inbound-comment-events.md)
 
