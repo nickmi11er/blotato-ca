@@ -2,6 +2,10 @@
   min-height: calc(100vh - 80px);
 }
 .automation-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   margin: 7px 0 28px;
 }
 .automation-list-heading h1 {
@@ -25,79 +29,286 @@
   font-size: 12px;
   margin-top: 8px;
 }
-.automation-list-item {
-  display: flex;
-  align-items: center;
+.automation-list-heading > .button {
+  flex-shrink: 0;
+}
+.automation-list-items {
+  display: grid;
+  /* auto-fill keeps a lone card the same width as cards in a full row. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 18px;
-  padding: 24px;
-  border: 1px solid var(--border-bright);
-  border-radius: 12px;
-  background: linear-gradient(120deg, #191128, #100b1e);
+  align-items: stretch;
+}
+.automation-list-item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 22px 0;
+  border: 1px solid #a67ac026;
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse at top left, #a854d50d, transparent 75%), #140e22;
+  box-shadow: 0 4px 16px #00000010;
   transition:
     border-color 0.18s,
-    background 0.18s;
+    background-color 0.18s,
+    box-shadow 0.18s;
 }
-.automation-list-item:hover {
-  border-color: #b13bff60;
-  background: linear-gradient(120deg, #201532, #140d22);
+.automation-list-item:hover,
+.automation-list-item:focus-visible {
+  border-color: #c67cec70;
+  background-color: #1c122c;
+  box-shadow: 0 8px 24px #00000025;
 }
-.automation-list-item > .automation-symbol {
-  width: 42px;
-  height: 42px;
+.automation-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.automation-card-top .automation-symbol {
+  display: grid;
+  width: 36px;
+  height: 36px;
   border-radius: 11px;
+  background: #bc6af015;
+  border-color: #c484ee30;
+  color: #d3a1f6;
 }
-.automation-list-item > .automation-symbol .icon {
-  width: 20px;
-  height: 20px;
+.automation-card-top .automation-symbol .icon {
+  width: 18px;
+  height: 18px;
+}
+.automation-card-top .draft-badge {
+  display: inline-flex;
+  margin: 0;
+  font-size: 10px;
+  padding: 3px 8px;
+  color: #ad9bbb;
 }
 .automation-list-copy {
   min-width: 0;
   flex: 1;
 }
 .automation-list-copy h2 {
-  font-size: 15px;
+  color: #eee5f5;
+  font-size: 17px;
+  line-height: 1.45;
   font-weight: 550;
+  letter-spacing: -0.025em;
   overflow-wrap: anywhere;
 }
-.automation-list-copy p {
-  margin-top: 5px;
-  color: var(--muted);
+.automation-card-trigger {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin-top: 9px;
+  color: #a598b1;
   font-size: 11px;
+  line-height: 1.6;
 }
-.automation-list-copy p > span {
-  padding: 0 4px;
-  color: var(--dim);
+.automation-card-trigger .icon {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: #a77cc1;
 }
-.automation-list-status {
-  display: block;
-  margin-top: 12px;
-  color: var(--dim);
+.automation-card-trigger > span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.automation-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0;
+}
+.automation-card-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #ffffff0d;
+  background: #ffffff03;
+  border-radius: 6px;
+  padding: 4px 7px;
+  color: #a79ab5;
   font-size: 10px;
+}
+.automation-card-meta .icon {
+  width: 12px;
+  height: 12px;
+}
+.automation-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 57px;
+  border-top: 1px solid #ffffff0c;
 }
 .automation-list-accounts {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-right: auto;
+}
+.automation-list-accounts > span {
+  display: inline-flex;
+}
+.automation-list-accounts .small-badge {
+  width: 23px;
+  height: 23px;
+  border-radius: 7px;
+}
+.automation-list-status,
+.automation-no-accounts {
+  font-size: 9px;
+  line-height: 1.5;
+  color: #8c7d9a;
+}
+.automation-list-status.is-dirty {
+  color: #e4a3c9;
 }
 .automation-list-arrow {
-  color: var(--dim);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #846793;
 }
-.automation-list-item:hover .automation-list-arrow {
+.automation-list-item:hover .automation-list-arrow,
+.automation-list-item:focus-visible .automation-list-arrow {
   color: #e7a5ed;
 }
 @media (max-width: 720px) {
-  .automation-list-item {
-    gap: 12px;
-    padding: 18px;
+  .automation-list-heading {
     flex-wrap: wrap;
-  }
-  .automation-list-copy {
-    flex-basis: calc(100% - 64px);
-  }
-  .automation-list-accounts {
-    margin-left: 54px;
-    margin-right: auto;
+    gap: 16px;
   }
   .automation-list-heading h1 {
     font-size: 23px;
+  }
+  .automation-list-items {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .automation-list-item {
+    padding: 20px 20px 0;
+  }
+}
+
+.automation-card {
+  position: relative;
+  min-width: 0;
+}
+.automation-card > .automation-list-item {
+  height: 100%;
+}
+.automation-card-top .draft-badge {
+  margin-right: 27px;
+}
+.automation-card-menu {
+  position: absolute;
+  top: 24px;
+  right: 16px;
+  z-index: 2;
+}
+.automation-card-menu:has(.automation-card-menu-items) {
+  z-index: 3;
+}
+.automation-card-menu-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  color: #ab92bc;
+}
+.automation-card-menu-toggle:hover,
+.automation-card-menu-toggle[aria-expanded="true"] {
+  background: #c180ee14;
+  color: #eee2f6;
+}
+.automation-card-menu-toggle .icon {
+  width: 17px;
+  height: 17px;
+}
+.automation-card-menu-items {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  width: 180px;
+  padding: 5px;
+  border: 1px solid #9e70bc55;
+  border-radius: 9px;
+  background: #2b1d3b;
+  box-shadow: 0 12px 35px #0009;
+}
+.automation-card-menu-items button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  color: #e9a3b7;
+  font-size: 12px;
+}
+.automation-card-menu-items button:hover {
+  background: #e56f9712;
+}
+.automation-card-menu-items .icon {
+  width: 15px;
+  height: 15px;
+}
+.button.button-danger {
+  background: #a8325b;
+  border: 1px solid #d45a82;
+  color: #fff;
+}
+.button.button-danger:hover {
+  background: #bf3d69;
+}
+.automation-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 70px 24px;
+  border: 1px dashed #b683cf35;
+  border-radius: 16px;
+  background: #a854d504;
+}
+.automation-list-empty .automation-symbol {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+}
+.automation-list-empty h2 {
+  font-size: 21px;
+  font-weight: 500;
+}
+.automation-list-empty p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 10px 0 24px;
+}
+@media (max-width: 720px) {
+  .automation-card-menu {
+    top: 19px;
+    right: 13px;
+  }
+  .automation-card-menu-toggle {
+    width: 38px;
+    height: 38px;
+  }
+  .automation-card-top .draft-badge {
+    margin-right: 31px;
   }
 }

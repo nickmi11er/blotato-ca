@@ -1,7 +1,6 @@
-import type { Draft, Messages, ScopeCatalog } from "../model/types";
-import { validateDraft } from "../model/validation";
-
-export const storageKey = "blotato.trigger-draft.v1";
+import type { Draft } from "../model/types";
+import { decodeWorkflow, migrateMessages } from "../model/workflow";
+export const storageKey = "blotato.trigger-draft.v2";
 export interface StoredDraft {
   draft: Draft;
   savedAt: string | null;
@@ -10,12 +9,14 @@ export interface StoredDraft {
 export function readDraft(defaults: Draft): StoredDraft {
   try {
     const saved: unknown = JSON.parse(
-      localStorage.getItem(storageKey) || "null",
+      localStorage.getItem(storageKey) ||
+        localStorage.getItem("blotato.trigger-draft.v1") ||
+        "null",
     );
     if (
       isRecord(saved) &&
       isRecord(saved.draft) &&
-      saved.draft.schemaVersion === 1
+      (saved.draft.schemaVersion === 1 || saved.draft.schemaVersion === 2)
     )
       return {
         draft: restoreDraft(saved.draft, defaults),
@@ -33,10 +34,13 @@ export function readDraft(defaults: Draft): StoredDraft {
 
 export function saveDraft(
   draft: Draft,
-  catalog: ScopeCatalog,
 ): { ok: true; savedAt: string } | { ok: false; error: string } {
-  const errors = validateDraft(draft, catalog);
-  if (errors.length) return { ok: false, error: errors[0] };
+  // Incomplete configuration is valid draft data. Only reject unreadable structure.
+  if (!decodeWorkflow(draft.steps))
+    return {
+      ok: false,
+      error: "This draft has unreadable steps and cannot be saved.",
+    };
   try {
     const savedAt = new Date().toISOString();
     localStorage.setItem(storageKey, JSON.stringify({ draft, savedAt }));
@@ -53,7 +57,11 @@ export function saveDraft(
 // Drafts are browser-local, and older or malformed storage never replaces defaults.
 export function restoreDraft(value: unknown, defaults: Draft): Draft {
   const result = structuredClone(defaults);
-  if (!isRecord(value) || value.schemaVersion !== 1) return result;
+  if (
+    !isRecord(value) ||
+    (value.schemaVersion !== 1 && value.schemaVersion !== 2)
+  )
+    return result;
   if (typeof value.name === "string") result.name = value.name.slice(0, 100);
   for (const key of [
     "accountIds",
@@ -90,17 +98,21 @@ export function restoreDraft(value: unknown, defaults: Draft): Draft {
     result.reentry = value.reentry;
   if (typeof value.caseSensitive === "boolean")
     result.caseSensitive = value.caseSensitive;
-  if (isRecord(value.messages)) {
-    for (const key of Object.keys(result.messages) as (keyof Messages)[]) {
-      if (typeof value.messages[key] === "string")
-        result.messages[key] = value.messages[key].slice(0, 1000);
-    }
-    try {
-      if (!["https:", "http:"].includes(new URL(result.messages.link).protocol))
-        result.messages.link = defaults.messages.link;
-    } catch {
-      result.messages.link = defaults.messages.link;
-    }
+  if (value.schemaVersion === 2) {
+    // Invalid nodes require repair; never replace a broken saved chain with actions.
+    result.steps = decodeWorkflow(value.steps) ?? [];
+  } else if (isRecord(value.messages)) {
+    const messages = value.messages;
+    result.steps = ["reply", "question", "linkText", "link"].every(
+      (key) => typeof messages[key] === "string",
+    )
+      ? migrateMessages({
+          reply: String(messages.reply),
+          question: String(messages.question),
+          linkText: String(messages.linkText),
+          link: String(messages.link),
+        })
+      : [];
   }
   return result;
 }

@@ -210,8 +210,7 @@
   .brand > span,
   .workspace-card,
   .nav-label,
-  .nav-count,
-  .connected-dot {
+  .nav-count {
     display: none;
   }
   .sidebar nav {

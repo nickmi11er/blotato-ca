@@ -1,14 +1,9 @@
+import type { Step } from "./workflow";
 export type MatchOperator = "whole_word" | "exact" | "contains";
 export type MatchKind = "keywords" | "any";
 export type Reentry = "skip_active" | "once" | "every";
-export interface Messages {
-  reply: string;
-  question: string;
-  linkText: string;
-  link: string;
-}
 export interface Draft {
-  schemaVersion: 1;
+  schemaVersion: 2;
   name: string;
   accountIds: string[];
   postScope: "all" | "selected";
@@ -20,7 +15,7 @@ export interface Draft {
   exclusions: string[];
   caseSensitive: boolean;
   reentry: Reentry;
-  messages: Messages;
+  steps: Step[];
 }
 export interface TestComment {
   accountId: string;

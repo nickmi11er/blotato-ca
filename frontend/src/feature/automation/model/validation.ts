@@ -1,22 +1,17 @@
+import {
+  defaultTemplates,
+  type EmailTemplate,
+} from "../../email-templates/model/templates";
+import { validateWorkflow } from "./workflowValidation";
+import { walkSteps } from "./workflow";
 import { normalize } from "./matcher";
-import type { Draft, Messages, ScopeCatalog } from "./types";
+import type { Draft, ScopeCatalog } from "./types";
 
-export function validateMessages(messages: Messages): string[] {
-  const errors: string[] = [];
-  if (Object.values(messages).some((value) => !value.trim()))
-    errors.push("Complete each message before saving.");
-  if (Object.values(messages).some((value) => value.length > 1000))
-    errors.push("Messages and links must be no longer than 1,000 characters.");
-  try {
-    if (!["http:", "https:"].includes(new URL(messages.link).protocol))
-      errors.push("Use an HTTP or HTTPS destination link.");
-  } catch {
-    errors.push("Enter a valid destination link.");
-  }
-  return errors;
-}
-
-export function validateDraft(draft: Draft, catalog: ScopeCatalog): string[] {
+export function validateDraft(
+  draft: Draft,
+  catalog: ScopeCatalog,
+  templates: readonly EmailTemplate[] = defaultTemplates,
+): string[] {
   const errors: string[] = [];
   if (!draft.name.trim()) errors.push("Give your automation a name.");
   if (draft.name.length > 100)
@@ -70,5 +65,31 @@ export function validateDraft(draft: Draft, catalog: ScopeCatalog): string[] {
     errors.push(
       "Use at most 30 terms per list, each no longer than 120 characters.",
     );
-  return [...errors, ...validateMessages(draft.messages)];
+  if (
+    draft.reentry === "every" &&
+    walkSteps(draft.steps).some((step) => step.kind === "wait_reply")
+  )
+    errors.push(
+      "Flows waiting for replies need one active conversation per person. Change repeat behavior in the trigger settings.",
+    );
+  const needsDM = walkSteps(draft.steps).some(
+    (step) =>
+      step.kind === "dm" ||
+      step.kind === "wait_reply" ||
+      (step.kind === "parallel" &&
+        step.actions.some((action) => action.kind === "dm")),
+  );
+  if (
+    needsDM &&
+    catalog.accounts.some(
+      (account) => draft.accountIds.includes(account.id) && !account.canSendDM,
+    )
+  )
+    errors.push(
+      "This flow uses DMs. Select accounts that support direct messages.",
+    );
+  return [
+    ...errors,
+    ...validateWorkflow(draft.steps, templates).map((issue) => issue.message),
+  ];
 }

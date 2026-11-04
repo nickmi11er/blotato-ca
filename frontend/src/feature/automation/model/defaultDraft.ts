@@ -1,6 +1,7 @@
+import { defaultWorkflow } from "./workflow";
 import type { Draft } from "./types";
 export const defaultDraft: Draft = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   name: "Pricing → email capture",
   accountIds: ["instagram", "facebook"],
   postScope: "all",
@@ -12,11 +13,5 @@ export const defaultDraft: Draft = {
   exclusions: [],
   caseSensitive: false,
   reentry: "skip_active",
-  messages: {
-    reply: "Sent you a DM! ✨",
-    question:
-      "Hey! Thanks for your interest. What’s the best email address to send our pricing to?",
-    linkText: "You’re all set! Here’s a little more about our pricing:",
-    link: "https://example.com/pricing",
-  },
+  steps: defaultWorkflow(),
 };

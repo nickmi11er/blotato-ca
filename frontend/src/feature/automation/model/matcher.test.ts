@@ -131,20 +131,18 @@ test("incomplete drafts cannot be saved", () => {
   assert.equal(validateDraft(draft, catalog).length, 3);
 });
 
-test("restored drafts keep supported settings and reject executable links", () => {
+test("restored drafts keep supported settings and flag unavailable scope", () => {
   const draft = restoreDraft(
     {
       ...defaultDraft,
       operator: "execute",
       accountIds: ["instagram", "unknown"],
-      messages: { link: "javascript:alert(1)" },
     },
     defaultDraft,
   );
   assert.equal(draft.operator, "whole_word");
   assert.deepEqual(draft.accountIds, ["instagram", "unknown"]);
   assert.ok(validateDraft(draft, catalog).length > 0);
-  assert.equal(draft.messages.link, defaultDraft.messages.link);
   assert.deepEqual(restoreDraft(null, defaultDraft), defaultDraft);
   assert.deepEqual(
     restoreDraft({ schemaVersion: 99 }, defaultDraft),

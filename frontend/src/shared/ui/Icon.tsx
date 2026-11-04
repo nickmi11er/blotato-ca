@@ -1,6 +1,13 @@
 import {
   type LucideIcon,
-  Activity,
+  Copy,
+  Undo2,
+  GitFork,
+  GitBranch,
+  CalendarClock,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
   ArrowRight,
   ArrowLeft,
   ArrowUpRight,
@@ -27,7 +34,14 @@ import {
 } from "lucide-react";
 
 const icons = {
-  activity: Activity,
+  copy: Copy,
+  undo: Undo2,
+  parallel: GitFork,
+  branch: GitBranch,
+  calendar: CalendarClock,
+  trash: Trash2,
+  up: ArrowUp,
+  down: ArrowDown,
   arrow: ArrowRight,
   arrowLeft: ArrowLeft,
   arrowUp: ArrowUpRight,

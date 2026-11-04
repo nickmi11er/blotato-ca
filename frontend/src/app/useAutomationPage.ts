@@ -6,7 +6,11 @@ function subscribe(onChange: () => void) {
 }
 
 function getPage() {
-  return window.location.hash === "#automations" ? "automations" : "builder";
+  return window.location.hash === "#templates"
+    ? "templates"
+    : window.location.hash === "#automations"
+      ? "automations"
+      : "builder";
 }
 
 export function useAutomationPage() {

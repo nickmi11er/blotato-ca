@@ -1,3 +1,4 @@
+import { walkSteps } from "../model/workflow";
 import { Section } from "../../../shared/ui/Section";
 import type { Draft, UpdateDraft, Reentry } from "../model/types";
 export function RepeatBehavior({
@@ -7,6 +8,9 @@ export function RepeatBehavior({
   draft: Draft;
   update: UpdateDraft;
 }) {
+  const waitsForReply = walkSteps(draft.steps).some(
+    (step) => step.kind === "wait_reply",
+  );
   return (
     <Section
       number="03"
@@ -26,8 +30,16 @@ export function RepeatBehavior({
           Only when they have no active conversation
         </option>
         <option value="once">Once per person for this automation</option>
-        <option value="every">On every matching comment</option>
+        <option value="every" disabled={waitsForReply}>
+          On every matching comment
+        </option>
       </select>
+      {waitsForReply && (
+        <p className="helper">
+          Flows waiting for a reply allow one active conversation per person, so
+          a DM cannot resume two runs.
+        </p>
+      )}
       <p className="helper">
         {draft.reentry === "skip_active"
           ? "Give each conversation room to breathe before starting a new one."

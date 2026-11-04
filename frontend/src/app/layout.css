@@ -140,13 +140,6 @@
   color: #ff9ecb;
   font: 10px var(--mono);
 }
-.connected-dot {
-  width: 5px;
-  height: 5px;
-  background: #5acfa8;
-  border-radius: 50%;
-  margin-left: auto;
-}
 .main-shell {
   margin-left: 224px;
   min-height: 100vh;

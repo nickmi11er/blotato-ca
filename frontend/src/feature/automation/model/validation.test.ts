@@ -28,7 +28,7 @@ test("validates restored messages and stale or mismatched scope references", () 
       ...defaultDraft,
       postScope: "selected",
       postIds: ["deleted-post"],
-      messages: { ...defaultDraft.messages, question: " " },
+      steps: [{ id: "test-dm", kind: "dm", text: " " }],
     },
     defaultDraft,
   );
@@ -36,7 +36,7 @@ test("validates restored messages and stale or mismatched scope references", () 
   draft.postIds = ["yt_1"];
   expect(validateDraft(draft, catalog)).toHaveLength(2);
   draft.postIds = ["ig_1"];
-  draft.messages.question = "Email?";
+  draft.steps = [{ id: "test-dm", kind: "dm", text: "Email?" }];
   expect(validateDraft(draft, catalog)).toEqual([]);
   draft.accountIds = ["deleted-account"];
   expect(validateDraft(draft, catalog)).toHaveLength(2);

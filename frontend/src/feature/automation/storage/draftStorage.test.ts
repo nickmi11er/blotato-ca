@@ -1,18 +1,18 @@
 import { expect, test, vi } from "vitest";
 import { defaultDraft } from "../model/defaultDraft";
-import { accounts, posts } from "../fixtures";
 import { readDraft, saveDraft, storageKey } from "./draftStorage";
 
-const catalog = { accounts, posts };
-
-test("round-trips a valid draft and refuses to overwrite it with invalid data", () => {
+test("round-trips incomplete drafts while refusing structurally unreadable steps", () => {
   const draft = { ...structuredClone(defaultDraft), name: "My automation" };
-  const result = saveDraft(draft, catalog);
+  const result = saveDraft(draft);
   expect(result.ok).toBe(true);
   expect(readDraft(defaultDraft).draft).toEqual(draft);
+  draft.steps = [{ id: "test", kind: "dm", text: " " }];
+  expect(saveDraft(draft).ok).toBe(true);
+  expect(readDraft(defaultDraft).draft.steps).toEqual(draft.steps);
   const saved = localStorage.getItem(storageKey);
-  draft.messages.reply = " ";
-  expect(saveDraft(draft, catalog).ok).toBe(false);
+  draft.steps = [draft.steps[0], draft.steps[0]];
+  expect(saveDraft(draft).ok).toBe(false);
   expect(localStorage.getItem(storageKey)).toBe(saved);
 });
 
@@ -37,5 +37,5 @@ test("handles malformed, unsupported, and unavailable storage", () => {
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
     throw new Error("quota");
   });
-  expect(saveDraft(defaultDraft, catalog)).toMatchObject({ ok: false });
+  expect(saveDraft(defaultDraft)).toMatchObject({ ok: false });
 });

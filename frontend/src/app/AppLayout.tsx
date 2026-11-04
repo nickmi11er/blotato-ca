@@ -3,12 +3,12 @@ import blotatoLogo from "../../assets/blotato.webp";
 import { Icon } from "../shared/ui/Icon";
 export function AppLayout({
   children,
-  onAccounts,
-  onActivity,
+  page,
+  automationCount,
 }: {
   children: ReactNode;
-  onAccounts: () => void;
-  onActivity: () => void;
+  page: string;
+  automationCount: number;
 }) {
   return (
     <div className="app-shell">
@@ -33,24 +33,21 @@ export function AppLayout({
         </div>
         <span className="nav-label">WORKSPACE</span>
         <nav aria-label="Workspace">
-          <a className="nav-item" href="#automations">
-            <Icon name="grid" /> Overview
-          </a>
           <a
-            className="nav-item active"
+            className={`nav-item ${page !== "templates" ? "active" : ""}`}
             href="#automations"
-            aria-current="page"
+            aria-current={page !== "templates" ? "page" : undefined}
           >
             <Icon name="bolt" /> Automations{" "}
-            <span className="nav-count">1</span>
+            <span className="nav-count">{automationCount}</span>
           </a>
-          <button className="nav-item" onClick={() => onAccounts()}>
-            <Icon name="users" /> Social accounts{" "}
-            <span className="connected-dot" />
-          </button>
-          <button className="nav-item" onClick={() => onActivity()}>
-            <Icon name="activity" /> Activity
-          </button>
+          <a
+            className={`nav-item ${page === "templates" ? "active" : ""}`}
+            aria-current={page === "templates" ? "page" : undefined}
+            href="#templates"
+          >
+            <Icon name="mail" /> Email templates
+          </a>
         </nav>
       </aside>
 

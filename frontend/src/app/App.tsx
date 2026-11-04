@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useTemplates } from "../feature/email-templates/model/useTemplates";
+import { EmailTemplates } from "../feature/email-templates/EmailTemplates";
 import { AppLayout } from "./AppLayout";
 import { useAutomationPage } from "./useAutomationPage";
 import { AutomationList } from "../feature/automation/AutomationList";
@@ -7,20 +9,24 @@ import {
   AutomationDialogs,
   type EditorModal,
 } from "../feature/automation/components/AutomationDialogs";
-import {
-  accounts,
-  posts,
-  initialComment,
-} from "../feature/automation/fixtures";
+import { accounts, posts } from "../feature/automation/fixtures";
 import { defaultDraft } from "../feature/automation/model/defaultDraft";
-import { useAutomationDraft } from "../feature/automation/model/useAutomationDraft";
+import { useAutomations } from "../feature/automation/model/useAutomations";
 import { Icon } from "../shared/ui/Icon";
 
 const catalog = { accounts, posts };
 
 export default function App() {
-  const page = useAutomationPage();
-  const controller = useAutomationDraft(defaultDraft, catalog);
+  const requestedPage = useAutomationPage();
+  const templates = useTemplates();
+  const automations = useAutomations(
+    defaultDraft,
+    catalog,
+    templates.templates,
+  );
+  const { controller } = automations;
+  const page =
+    requestedPage === "builder" && !controller ? "automations" : requestedPage;
   const [modal, setModal] = useState<EditorModal>(null);
   const [toast, setToast] = useState("");
 
@@ -39,36 +45,56 @@ export default function App() {
       <a className="skip-link" href={`#${page}`}>
         Skip to content
       </a>
-      <AppLayout
-        onAccounts={() => setModal("accounts")}
-        onActivity={() => setModal("activity")}
-      >
-        {page === "automations" ? (
-          <AutomationList
-            draft={controller.draft}
-            catalog={catalog}
-            dirty={controller.dirty}
-            savedAt={controller.savedAt}
+      <AppLayout page={page} automationCount={automations.automations.length}>
+        {automations.storageError && (
+          <p className="wf-error" role="alert">
+            {automations.storageError}
+          </p>
+        )}
+        {page === "templates" ? (
+          <EmailTemplates
+            controller={templates}
+            steps={automations.templateSteps}
+            notify={setToast}
           />
-        ) : (
+        ) : page === "automations" ? (
+          <AutomationList
+            automations={automations.automations}
+            catalog={catalog}
+            select={automations.select}
+            remove={(id) => {
+              const error = automations.remove(id);
+              if (!error) setToast("Automation deleted.");
+              return error;
+            }}
+            create={() => {
+              const error = automations.create();
+              if (error) setToast(error);
+              else {
+                setToast("");
+                window.location.hash = "#builder";
+              }
+            }}
+          />
+        ) : controller ? (
           <AutomationBuilder
+            key={automations.activeId}
             controller={controller}
             catalog={catalog}
-            initialComment={initialComment}
+            templates={templates.templates}
             setModal={setModal}
             save={() => setToast(controller.save())}
           />
-        )}
+        ) : null}
       </AppLayout>
-      <AutomationDialogs
-        modal={modal}
-        setModal={setModal}
-        draft={controller.draft}
-        update={controller.update}
-        savedAt={controller.savedAt}
-        setToast={setToast}
-        catalog={catalog}
-      />
+      {controller && (
+        <AutomationDialogs
+          modal={modal}
+          setModal={setModal}
+          draft={controller.draft}
+          update={controller.update}
+        />
+      )}
       <div
         className={`toast ${toast ? "visible" : ""}`}
         role="status"
